@@ -2,11 +2,11 @@
 #include "common.h"
 
 extern GV_HEAP       MemorySystems_800AD2F0[MAX_MEMSYS];
-extern unsigned int *ptr_800B1400[256];
+extern OT_TYPE ptr_800B1400[256];
 
 typedef struct DG_DivideMem
 {
-    long       *ot;         // 0x00
+    OT_TYPE    *ot;         // 0x00
     short       field_04;   // 0x04
     u_short     raise;      // 0x06
     long        opz;        // 0x08 outer product
@@ -73,7 +73,14 @@ STATIC POLY_GT4 *DG_InitDividePacks( int memIdx )
 
     DG_DivideMem *divide_mem = GetDivideMem();
 
+#ifdef __psyz
+    /* 0x34 = 52 = the PACKED POLY_GT4. PSY-Z's is 56 (8-byte header): slots
+     * carved at the console size make consecutive packs overlap by 4 bytes,
+     * each one's last vertex overwriting the next one's tag. */
+    heap = DG_SplitMemory( memIdx, &divide_mem->n_packs, sizeof(POLY_GT4) );
+#else
     heap = DG_SplitMemory( memIdx, &divide_mem->n_packs, 0x34 );
+#endif
 
     divide_mem->pHeap = heap;
     divide_mem->pAlloc = 0;
@@ -134,7 +141,11 @@ STATIC POLY_GT4 *DG_GetDividePacks( void )
 
     divide_mem = GetDivideMem();
 
+#ifdef __psyz
+    divide_mem->size = divide_mem->size - (int)sizeof(POLY_GT4);
+#else
     divide_mem->size = divide_mem->size - 0x34;
+#endif
 
     if (divide_mem->size < 0)
     {
@@ -144,7 +155,11 @@ STATIC POLY_GT4 *DG_GetDividePacks( void )
     {
         divide_mem->n_packs -= 1;
         pack_addr = divide_mem->pDataStart;
+#ifdef __psyz
+        divide_mem->pDataStart = (char *)divide_mem->pDataStart + sizeof(POLY_GT4);
+#else
         divide_mem->pDataStart += 0x34;
+#endif
         return pack_addr;
     }
 
@@ -290,14 +305,14 @@ STATIC int DG_CopyPackToRVector( DG_RVECTOR *rvec )
     DG_DivideMem    *divide_mem2;
     POLY_GT4        *pack;
     POLY_GT4        *pack2;
-    long            *ot;
+    OT_TYPE         *ot;
     int              z_idx;
 
     if ( DG_GetRVectorCode( rvec ) ) return 0;
 
     divide_mem = GetDivideMem();
 
-    if ( ( (unsigned int)divide_mem->rvec < 0x1f800254 ) && ( divide_mem->n_packs >= 4 ) )
+    if ( ( (unsigned int)divide_mem->rvec < (SCRPAD_ADDR + 0x254) ) && ( divide_mem->n_packs >= 4 ) )
     {
         gte_NormalClip( *(int*)&rvec->sxy, *(int*)&rvec[1].sxy, *(int*)&rvec[3].sxy, &divide_mem->opz );
         v1 = divide_mem->opz;
@@ -344,9 +359,10 @@ STATIC int DG_CopyPackToRVector( DG_RVECTOR *rvec )
     ot = divide_mem2->ot;
     ot = &ot[ ( unsigned char ) z_idx ];
 
-    //should be addPrim but has extra  stuff in there
-    pack->tag = ( ( z_idx & 0xFF00 ) << 16 ) | ot[0];
-    ot[0] = ( int )pack & 0xFFFFFF;
+    /* first radix pass, same as add_prim_mid: low byte picks the bucket, high
+     * byte rides in the length field until DG_SortChanl re-buckets by it */
+    addPrim( ot, pack );
+    setlen( pack, z_idx >> 8 );
     return 0;
 }
 
@@ -412,10 +428,10 @@ typedef struct cpystrct {
 
 static inline void copy_verts(unsigned char *faceIndexOffset, SVECTOR *vertexIndexOffset)
 {
-    *(cpystrct*)0x1F800038 = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[0]];
-    *(cpystrct*)0x1F800060 = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[1]];
-    *(cpystrct*)0x1F8000B0 = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[3]];
-    *(cpystrct*)0x1F8000D8 = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[2]];
+    *(cpystrct*)(SCRPAD_ADDR + 0x038) = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[0]];
+    *(cpystrct*)(SCRPAD_ADDR + 0x060) = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[1]];
+    *(cpystrct*)(SCRPAD_ADDR + 0x0B0) = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[3]];
+    *(cpystrct*)(SCRPAD_ADDR + 0x0D8) = *(cpystrct*)&vertexIndexOffset[faceIndexOffset[2]];
 }
 
 //function seems to call scratchpad addresses directly rather than through a struct
@@ -426,7 +442,7 @@ STATIC void DG_InitRVector( DG_OBJ *obj,  int idx )
     int           n_packs;
 
     org_pack = obj->packs[ idx ];
-    *(short*)0x1F800006 = obj->raise;
+    *(short*)(SCRPAD_ADDR + 0x006) = obj->raise;
 
     while ( obj )
     {
@@ -440,46 +456,46 @@ STATIC void DG_InitRVector( DG_OBJ *obj,  int idx )
             int pack_raise = pack->tag & 0xFFFF;
             int pack_addr  = pack->tag >> 8;
 
-            if ( ( *(unsigned int*)0x1F800014 < pack_addr ) &&
-                 ( pack_raise < *(int*)0x1F800018 )         &&
-                 ( *(int*)0x1F800028 >= 4 ) )
+            if ( ( *(unsigned int*)(SCRPAD_ADDR + 0x014) < pack_addr ) &&
+                 ( pack_raise < *(int*)(SCRPAD_ADDR + 0x018) )         &&
+                 ( *(int*)(SCRPAD_ADDR + 0x028) >= 4 ) )
             {
                 *(short*)pack = 0;
-                *(int*)0x1F80001C = (int)pack;
+                *(int*)(SCRPAD_ADDR + 0x01C) = (int)pack;
 
                 if ( pack_addr & 0x100 )
                 {
-                    *(int*)0x1F80000C = -*(int*)0x1F800010;
+                    *(int*)(SCRPAD_ADDR + 0x00C) = -*(int*)(SCRPAD_ADDR + 0x010);
                 }
                 else
                 {
-                    *(int*)0x1F80000C = *(int*)0x1F800010;
+                    *(int*)(SCRPAD_ADDR + 0x00C) = *(int*)(SCRPAD_ADDR + 0x010);
                 }
 
                 //loc_80019A04:
-                *(int*)0x1F800034 = (int)0x1F800038;
+                *(int*)(SCRPAD_ADDR + 0x034) = (int)(SCRPAD_ADDR + 0x038);
 
                 copy_verts( faceIndexOffset, vertexIndexOffset );
 
-                LCOPY2(  &pack->x0 , (void*)0x1F800044 , &pack->x1 , (void*)0x1F80006C );
-                LCOPY2(  &pack->x2 , (void*)0x1F8000BC , &pack->x3 , (void*)0x1F8000E4 );
-                SCOPYL2( &pack->u0 , (void*)0x1F80003E , &pack->u1 , (void*)0x1F800066 );
-                SCOPYL2( &pack->u2 , (void*)0x1F8000B6 , &pack->u3 , (void*)0x1F8000DE );
-                LCOPY2(  &pack->r0 , (void*)0x1F800040 , &pack->r1 , (void*)0x1F800068 );
-                LCOPY2(  &pack->r2 , (void*)0x1F8000B8 , &pack->r3 , (void*)0x1F8000E0 );
+                LCOPY2(  &pack->x0 , (void*)(SCRPAD_ADDR + 0x044) , &pack->x1 , (void*)(SCRPAD_ADDR + 0x06C) );
+                LCOPY2(  &pack->x2 , (void*)(SCRPAD_ADDR + 0x0BC) , &pack->x3 , (void*)(SCRPAD_ADDR + 0x0E4) );
+                SCOPYL2( &pack->u0 , (void*)(SCRPAD_ADDR + 0x03E) , &pack->u1 , (void*)(SCRPAD_ADDR + 0x066) );
+                SCOPYL2( &pack->u2 , (void*)(SCRPAD_ADDR + 0x0B6) , &pack->u3 , (void*)(SCRPAD_ADDR + 0x0DE) );
+                LCOPY2(  &pack->r0 , (void*)(SCRPAD_ADDR + 0x040) , &pack->r1 , (void*)(SCRPAD_ADDR + 0x068) );
+                LCOPY2(  &pack->r2 , (void*)(SCRPAD_ADDR + 0x0B8) , &pack->r3 , (void*)(SCRPAD_ADDR + 0x0E0) );
 
-                gte_ldv3( 0x1F800060 , 0x1F8000B0 , 0x1F8000D8 );
+                gte_ldv3( (SCRPAD_ADDR + 0x060) , (SCRPAD_ADDR + 0x0B0) , (SCRPAD_ADDR + 0x0D8) );
                 gte_rtpt();
-                gte_stsz3( 0x1F800070 , 0x1F8000C0 , 0x1F8000E8 );
+                gte_stsz3( (SCRPAD_ADDR + 0x070) , (SCRPAD_ADDR + 0x0C0) , (SCRPAD_ADDR + 0x0E8) );
 
-                gte_ldv0( 0x1F800038 );
+                gte_ldv0( (SCRPAD_ADDR + 0x038) );
                 gte_rtps();
-                gte_stsz( 0x1F800048 );
+                gte_stsz( (SCRPAD_ADDR + 0x048) );
 
-                DG_SetRVectorCode( (DG_RVECTOR*)0x1F800038 );
-                DG_SetRVectorCode( (DG_RVECTOR*)0x1F800060 );
-                DG_SetRVectorCode( (DG_RVECTOR*)0x1F8000B0 );
-                DG_SetRVectorCode( (DG_RVECTOR*)0x1F8000D8 );
+                DG_SetRVectorCode( (DG_RVECTOR*)(SCRPAD_ADDR + 0x038) );
+                DG_SetRVectorCode( (DG_RVECTOR*)(SCRPAD_ADDR + 0x060) );
+                DG_SetRVectorCode( (DG_RVECTOR*)(SCRPAD_ADDR + 0x0B0) );
+                DG_SetRVectorCode( (DG_RVECTOR*)(SCRPAD_ADDR + 0x0D8) );
                 DG_SubDivideRVectors();
 
             }
@@ -487,19 +503,22 @@ STATIC void DG_InitRVector( DG_OBJ *obj,  int idx )
             {
                 if ( pack_raise )
                 {
-                    u_long *ot;
+                    OT_TYPE *ot;
                     u_short raise;
 
-                    ot = (*(u_long **)0x1F800000);
-                    raise = *(u_short *)0x1F800006;
+                    ot    = GetDivideMem()->ot;
+                    raise = GetDivideMem()->raise;
 
                     raise = pack_raise - raise;
                     pack_raise = raise;
                     ot = &ot[ ( u_char ) pack_raise ];
 
-                    //should be addPrim but has extra value
-                    pack->tag = ( ( pack_raise & 0xFF00 ) << 16 ) | ( int )*ot;
-                    *ot = ( int )pack & 0xFFFFFF;
+                    /* first radix pass: bucket by the low byte of the depth and
+                     * park the high byte in the length field, which the second
+                     * pass (DG_SortChanl) re-buckets by. PSY-Q packed both into
+                     * one 32-bit tag; PSY-Z keeps addr and len apart. */
+                    addPrim( ot, pack );
+                    setlen( pack, pack_raise >> 8 );
                 }
             }
             pack++;
@@ -511,17 +530,18 @@ STATIC void DG_InitRVector( DG_OBJ *obj,  int idx )
     }
 }
 
-static inline void add_prim_mid( u_long *ot, POLY_GT4 *pack, int z_idx, int raise )
+static inline void add_prim_mid( OT_TYPE *ot, POLY_GT4 *pack, int z_idx, int raise )
 {
-    unsigned long *temp;
+    OT_TYPE *temp;
     z_idx = (z_idx - raise);
     z_idx &= 0xFFFF;
 
     temp = &ot[ ( unsigned char ) z_idx ];
 
-    //should be addPrim but has extra value
-    pack->tag = ( ( z_idx & 0xFF00 ) << 16 ) | ( int )*temp;
-    *temp = ( int )pack;
+    /* see the note in DG_DividePrim: low byte selects the bucket, high byte is
+     * stashed in the length field for the second radix pass */
+    addPrim( temp, pack );
+    setlen( pack, z_idx >> 8 );
 }
 
 STATIC void DG_AddSubdividedPrim( DG_OBJ *obj, int idx )
@@ -530,8 +550,7 @@ STATIC void DG_AddSubdividedPrim( DG_OBJ *obj, int idx )
     POLY_GT4 *pack;
     int       raise;
     int       n_packs;
-    u_long   *ot;
-    u_long   *ot_temp;
+    OT_TYPE  *ot_temp;
     u_short   pack_raise;
 
     org_pack  = obj->packs[ idx ];
@@ -542,10 +561,9 @@ STATIC void DG_AddSubdividedPrim( DG_OBJ *obj, int idx )
         n_packs = obj->n_packs;
         pack = (POLY_GT4*)getaddr( &org_pack );
 
-        //TODO: below three lines don't seem right but provide fake match
-        ot = (u_long *)SCRPAD_ADDR;
-        ot = (u_long *)ot[0];
-        ot_temp = ot;
+        /* was three lines reading the pointer parked at scratchpad offset 0;
+         * that is exactly DG_DivideMem::ot, which lives there */
+        ot_temp = GetDivideMem()->ot;
 
         for ( --n_packs ; n_packs >= 0 ; --n_packs )
         {
@@ -574,7 +592,7 @@ void DG_DivideChanl( DG_CHANL *chanl, int idx )
     DG_Clip( &chanl->clip_rect, chanl->clip_distance );
 
     divide_mem = GetDivideMem();
-    divide_mem->ot = (u_long *)ptr_800B1400;
+    divide_mem->ot = ptr_800B1400;
     divide_mem->field_14 = 0x800;
 
     if ( chanl->clip_distance > 1000)

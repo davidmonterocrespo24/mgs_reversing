@@ -198,4 +198,18 @@ char *GCL_GetVar( char *top, int *type_p, int *value_p );
 char *GCL_SetVar( char *top, int value );
 char *GCL_VarSaveBuffer( char *top );
 
+
+#ifdef __psyz
+/* MGS tells a script-block POINTER apart from a 16-bit proc id by testing the
+ * sign bit: every PSX RAM address is 0x8xxxxxxx, so a pointer always read as
+ * negative. Host addresses are not -- PSRAM here is 0x3Cxxxxxx, which is
+ * POSITIVE, so a stored block pointer was taken for a proc id, looked up,
+ * missed ("PROC 3C1987D2 NOT FOUND"), and the NULL it returned was walked at
+ * offset 3. Proc ids come from GCL_GetShort and are 16-bit, so anything above
+ * that range is a pointer no matter which memory map we are on. */
+#define GCL_IS_BLOCK_PTR(v) ((unsigned int)(v) > 0xFFFFu)
+#else
+#define GCL_IS_BLOCK_PTR(v) ((int)(v) < 0)
+#endif
+
 #endif // __MGS_LIBGCL_H__

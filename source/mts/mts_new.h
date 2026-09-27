@@ -69,7 +69,30 @@ extern void *mts_get_bss_tail(void);
 // "mts_new.c" should really be __FILE__ but we get the full path using the
 // decomp's build system. mts.lib was originally built using a local Makefile.
 
-#if __STDC_VERSION__ >= 199901L // C99
+#if defined(__psyz)
+/* On the PSX a failed assertion scrolled past on a dev-kit console. Off it, an
+ * assertion inside the scheduler loop floods the serial line forever and buries
+ * the boot log that would explain it -- so stop after a handful. */
+extern int mts_assert_budget;
+#define mts_assert( cond, line, ... )                               \
+        if ( !( cond ) )                                            \
+        {                                                           \
+            if ( mts_assert_budget > 0 )                            \
+            {                                                       \
+                mts_assert_budget--;                                \
+                printf( "assertion faled : %s line %d : Task %d\n", \
+                        "mts_new.c", line,                          \
+                        mts_active_task_800C0DB0 );                 \
+                printf( __VA_ARGS__ );                              \
+                printf( "\n" );                                     \
+                if ( mts_assert_budget == 0 )                       \
+                {                                                   \
+                    printf( "*** assertion budget exhausted; "      \
+                            "silencing further mts asserts\n" );     \
+                }                                                   \
+            }                                                       \
+        }
+#elif __STDC_VERSION__ >= 199901L // C99
 #define mts_assert( cond, line, ... )                               \
         if ( !( cond ) )                                            \
         {                                                           \

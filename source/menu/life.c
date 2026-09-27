@@ -304,7 +304,7 @@ void menu_font_kill_helper_8003F50C(void)
  * @param work Pointer to the MenuWork structure containing the bar states.
  * @param unused
  */
-void menu_life_update_8003F530(MenuWork *work, u_long *ot)
+void menu_life_update_8003F530(MenuWork *work, OT_TYPE *ot)
 {
     int               updated;
     MenuMan_MenuBars *pBars;
@@ -501,7 +501,7 @@ void menu_printDescription_8003F97C(char *description)
 
 // When scrolling items/weapons menu, draws the life bar, the text "EQUIP" or
 // "WEAPON" and the background rectangle around the item/weapon description.
-void menu_drawDescriptionPanel_8003F9B4(MenuWork *work, u_long *ot, const char *str)
+void menu_drawDescriptionPanel_8003F9B4(MenuWork *work, OT_TYPE *ot, const char *str)
 {
     POLY_F4 *polyF4;
     TILE    *tile;

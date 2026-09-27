@@ -1,5 +1,8 @@
 #include "libdg.h"
 #include "common.h"
+#ifdef __psyz
+#include <stdint.h>
+#endif
 
 STATIC DG_TEX dword_8009D3C4 = {0};
 
@@ -10,14 +13,62 @@ STATIC int DG_AllocPacks( DG_OBJ *obj, int idx )
 
     while (object)
     {
+#ifdef __psyz
+        /* Walk defensively. A DG_OBJ's extend chain is short -- a handful of
+         * links -- and terminates in NULL. When a stage tears down while the
+         * render pipeline is mid-frame, this can be reached with an obj whose
+         * extend still points at freed memory, and the walk then follows
+         * whatever is there: LoadProhibited on a wild address, board reboots.
+         * The console never sees it because there the teardown and the render
+         * are locked in step. Nothing legitimate has hundreds of links or a
+         * pointer outside PSRAM, so stop rather than fault -- an object drawn
+         * with too few packs for one frame is invisible; a reset is not. */
+        static int reported = 8;
+        if (total_packs > 4096 ||
+            ((unsigned)(uintptr_t)object >> 24) != 0x3Cu)
+        {
+            if (reported > 0)
+            {
+                reported--;
+                printf("[opack] bad extend chain at %p (packs so far %d)\n",
+                       (void *)object, total_packs);
+            }
+            break;
+        }
+#endif
         total_packs += object->n_packs;
         object = object->extend;
     }
+
+#ifdef __psyz
+    /* The walk above stops at a bad link, but by then it may already have
+     * added a garbage n_packs -- the first crash after adding that guard came
+     * back with total_packs = -32640, which sails into GV_AllocMemory2 as a
+     * huge unsigned size. Refuse instead: DG_MakeObjPacket answers -1 and
+     * DG_BoundObjs simply marks the object invisible for the frame. */
+    if (total_packs <= 0 || total_packs > 4096)
+    {
+        static int reported = 8;
+        if (reported > 0)
+        {
+            reported--;
+            printf("[opack] refusing %d packs for obj %p\n", total_packs,
+                   (void *)obj);
+        }
+        return -1;
+    }
+#endif
 
     if (!GV_AllocMemory2(idx, total_packs * sizeof(POLY_GT4), (void **)&obj->packs[idx]))
     {
         return -1;
     }
+#ifdef __psyz
+    if (0) printf("[packs] obj %p model %p buf[%d] %p..%p n %d\n", (void *)obj,
+           (void *)obj->model, idx, (void *)obj->packs[idx],
+           (void *)((char *)obj->packs[idx] + total_packs * sizeof(POLY_GT4)),
+           total_packs);
+#endif
     return 0;
 }
 

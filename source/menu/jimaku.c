@@ -13,7 +13,7 @@ extern UnkJimakuStruct gUnkJimakuStruct_800BDA70;
 
 signed char dword_8009E76C[] = {-1, 0, 1, 0, 0, 1, 0, -1};
 
-void menu_jimaku_act( MenuWork *work, u_long *ot )
+void menu_jimaku_act( MenuWork *work, OT_TYPE *ot )
 {
     TextConfig config;
     int        i;

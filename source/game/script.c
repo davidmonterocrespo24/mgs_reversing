@@ -6,7 +6,9 @@
 #include "libgv/libgv.h"
 #include "libdg/libdg.h"
 #include "libgcl/libgcl.h"
+#include "libfs/libfs.h"    /* FS_CdGetStageFileTop: is this stage on the board? */
 #include "game/game.h"
+#include "game/loader.h"    /* Mgs_ResolveStage */
 #include "linkvar.h"
 #include "game/item.h"
 #include "game/delay.h"
@@ -27,7 +29,7 @@ STATIC int  SECTION(".sbss") gBinds_800ABA60;
 STATIC int  SECTION(".sbss") gBindsCount_800ABA64;
 
 extern char *GM_StageName;
-char         SECTION(".sbss") * GM_StageName;
+extern char* GM_StageName;  /* defined in libgv/gvd.c */
 
 /*---------------------------------------------------------------------------*/
 
@@ -569,6 +571,35 @@ static int GM_Command_load(char *top)
         return GCL_OK;
     }
 
+#ifdef __psyz
+    /* Only a handful of the disc's 96 stage blocks fit on the board, so sooner
+     * or later a door leads somewhere that was not packed. Nothing downstream
+     * checks, because on the console every stage is always there: with the
+     * stage missing from STAGE.DIR, FS_LoadStageRequest issues a read at
+     * sector -1, no sector ever arrives, and FS_LoadStageSync answers "still
+     * busy" forever -- by which point the previous stage has already been torn
+     * down. The result is a permanently black screen with the actor list idle,
+     * which is what "NOT FOUND s07b" did to the whole game.
+     *
+     * This is the last point where the world is still intact, so refuse the
+     * transition here: the door simply does not lead anywhere and play carries
+     * on in the current room. */
+    {
+        const char *resolved = Mgs_ResolveStage(scriptStageName);
+        if (resolved == NULL)
+        {
+            printf("[stage] '%s' is not packed on this board, staying put\n",
+                   scriptStageName);
+            return GCL_OK;
+        }
+        if (resolved != scriptStageName)
+        {
+            printf("[stage] '%s' -> '%s'\n", scriptStageName, resolved);
+            scriptStageName = (char *)resolved;
+        }
+    }
+#endif
+
     GM_PreviousStageFlag = GM_CurrentStageFlag;
     GM_CurrentStageFlag = GV_StrCode(scriptStageName);
 
@@ -1003,10 +1034,22 @@ static int GM_Command_func(char *top)
     if (GCL_GetOption('s'))
     {
         control = GM_PlayerControl;
-        GM_SnakePosX = control->mov.vx;
-        GM_SnakePosY = control->mov.vy;
-        GM_SnakePosZ = control->mov.vz;
-        GM_LastResultFlag = control->rot.vy;
+#ifdef __psyz
+        /* "func -s" copies the player's position into the save variables. On
+         * the console the player always exists by the time a scenario asks;
+         * here a restart tears the actor list down and the scenario re-runs
+         * before Snake has been recreated, so this arrives with a null
+         * control and the null read reboots the board. Leaving the stored
+         * position untouched is the same answer the console would give,
+         * because there is nothing new to copy. */
+        if (control)
+#endif
+        {
+            GM_SnakePosX = control->mov.vx;
+            GM_SnakePosY = control->mov.vy;
+            GM_SnakePosZ = control->mov.vz;
+            GM_LastResultFlag = control->rot.vy;
+        }
     }
     if (GCL_GetOption('a')) // area
     {

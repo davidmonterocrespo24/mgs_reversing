@@ -408,6 +408,22 @@ static void Act(Work *work)
 
     message = s03e_evpanel_800C3488(work);
 
+#ifdef __psyz
+    /* And if it exists, does it see the press? `message` is what the panel
+     * decides the player is doing; bit 0 is what moves it out of state 0. Only
+     * report when something changes, so walking past the lift is silent and a
+     * button press is not lost in a wall of identical lines. */
+    {
+        static int last_msg = -1, last_state = -1;
+        if (message != last_msg || work->field_2E != last_state)
+        {
+            last_msg = message;
+            last_state = work->field_2E;
+            printf("[lift] panel msg %02x state %d\n", message, work->field_2E);
+        }
+    }
+#endif
+
     switch(work->field_2E)
     {
     case 0:
@@ -458,6 +474,7 @@ static void Act(Work *work)
         NewPadVibration(s03e_dword_800C3290, 1);
         NewPadVibration(s03e_dword_800C329C, 2);
 
+        { extern const char *mgs_dbg_undraw_src; mgs_dbg_undraw_src = "game/evpanel.c:461"; }
         DG_UnDrawFrameCount = 0x7fff0000;
 
         GM_SetSound(0xff0000fe, SD_ASYNC);
@@ -1008,6 +1025,14 @@ void *NewElevatorPanel(int name, int where, int argc, char **argv)
 {
     Work *work;
     int          button_count;
+
+#ifdef __psyz
+    /* Does the panel exist at all? Pressing the action button at the dock's
+     * lift does nothing, and that has two very different explanations: no
+     * panel actor was ever spawned, or it exists and never sees the press.
+     * One line at construction separates them. */
+    printf("[lift] panel spawned\n");
+#endif
 
     button_count = THING_Gcl_GetIntDefault('n', 3);
     work = GV_NewActor(EXEC_LEVEL, sizeof(Work) + sizeof(SVECTOR) * button_count * 4);

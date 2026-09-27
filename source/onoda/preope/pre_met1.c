@@ -166,7 +166,7 @@ static void PreMet1_800C4FD4(Work *work, int index)
     }
 }
 
-static void PreMet1_800C50D4(Work *work, u_long *ot)
+static void PreMet1_800C50D4(Work *work, OT_TYPE *ot)
 {
     int       i, j, k;
     int       page_number;

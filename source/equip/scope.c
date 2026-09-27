@@ -66,7 +66,7 @@ STATIC SVECTOR svecs_8009F2C8[2] = {
     { 0, 0, 3200, 0 }
 };
 
-static void addPrimEX(u_long *ot, void *prim)
+static void addPrimEX(OT_TYPE *ot, void *prim)
 {
     if ((GM_PlayerStatus & PLAYER_NOT_SIGHT) == 0)
     {
@@ -154,7 +154,7 @@ static void scope_act_helper_8006258C(Work *work)
     int      iVar1;
     int      iVar3;
     int      temp;
-    u_long  *ot;
+    OT_TYPE  *ot;
     LINE_F2 *lines;
     int      i;
 
@@ -350,7 +350,7 @@ static void ManagePadInput(Work *work, unsigned short pad_status)
     }
 }
 
-static void ManageZoom(Work *work, u_long *ot, int pad_status)
+static void ManageZoom(Work *work, OT_TYPE *ot, int pad_status)
 {
     short    zoomLineLength;
     int      iVar3;
@@ -468,7 +468,7 @@ static void ManageZoom(Work *work, u_long *ot, int pad_status)
     GM_Camera.zoom = zoomLevel;
 }
 
-static void DrawMovingRectangle(Work *work, u_long *ot)
+static void DrawMovingRectangle(Work *work, OT_TYPE *ot)
 {
     LINE_F4 *pRect; // Top, right and bottom border.
     LINE_F2 *pLeftBorder;
@@ -504,14 +504,14 @@ static void DrawMovingRectangle(Work *work, u_long *ot)
     addPrimEX(ot, pLeftBorder);
 }
 
-static void DrawMovingBarGraph(Work *work, u_long *ot)
+static void DrawMovingBarGraph(Work *work, OT_TYPE *ot)
 {
     short    lineHeight;
     int      primCount;
     int      i;
     LINE_F3 *pLine_F3;
-    u_long  *otMin;
-    u_long  *chnlOt;
+    OT_TYPE  *otMin;
+    OT_TYPE  *chnlOt;
     u_long  *curPrim;
     int      numOTEntries;
 
@@ -564,7 +564,7 @@ static void Act(Work *work)
     int             model;
     OBJECT         *parent_obj;
     OBJECT_NO_ROTS *obj;
-    u_long         *ot;
+    OT_TYPE         *ot;
     u_short         pad_status;
 
     if (!(work->flags & 0x8000))

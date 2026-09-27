@@ -43,7 +43,7 @@ typedef struct _Work
 
 static void ClearScreen(Work *work)
 {
-    u_long *ot;
+    OT_TYPE *ot;
     TILE   *tile;
     DR_STP *stp;
 
@@ -96,7 +96,7 @@ static void InitPrims(Work *work)
 
 static void DrawEffect(Work *work)
 {
-    u_long   *ot;
+    OT_TYPE   *ot;
     SPRT     *sprt;
     DR_TPAGE *tpage;
 

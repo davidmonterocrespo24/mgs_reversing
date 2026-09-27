@@ -860,12 +860,40 @@ STATIC int CheckEvents(GV_ACT *work)
 
     GM_GameStatus &= ~GAME_FLAG_BIT_07;
 
+#ifdef __psyz
+    /* i is -1 when no fixed camera claims the change, and that is NOT an error:
+     * it means "no fixed camera here", which is how the game hands the shot
+     * back to the one that follows the player. ChangeCamera must see it.
+     *
+     * What is an error is the read below. GM_CameraList[-1] takes the sixteen
+     * bytes sitting in front of the array -- on the PSX deterministic and
+     * whatever the game shipped with, here whatever the linker parked there.
+     * Setting GAME_FLAG_BIT_07 off that is how the view ended up with no
+     * target: measured on the board, the eye's Y climbed 1816 -> 8770 -> 17178
+     * -> 19725 while kept-saturated tracked it 1560 -> 15912, until four
+     * objects in five projected with an overflowing divide, nothing was
+     * culled, 28000 models hit a primitive queue sized for a fraction of that,
+     * and the GPU reader desynced on the wreckage. That was the white screen.
+     *
+     * No camera means no camera asking for the flag, so leave it clear.
+     *
+     * An earlier attempt pinned i to the previous camera instead. It killed
+     * the white screen but replaced it with a camera that stays behind when
+     * the player walks out of the zone -- a fix that swapped one bug for
+     * another because it treated -1 as a failure rather than as a value. */
+    if (i >= 0 && (GM_CameraList[i].trg.pad & 1))
+    {
+        GM_GameStatus |= GAME_FLAG_BIT_07;
+    }
+    return 1;
+#else
     if (GM_CameraList[i].trg.pad & 1)
     {
         GM_GameStatus |= GAME_FLAG_BIT_07;
     }
 
     return 1;
+#endif
 }
 
 STATIC void sub_800303E0(SVECTOR *arg0)

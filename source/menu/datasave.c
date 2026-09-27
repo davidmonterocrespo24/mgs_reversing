@@ -1090,7 +1090,7 @@ STATIC void sub_8004AEA8(SELECT_INFO *info)
 #define SAVE_MES_X      160
 #define SAVE_MES_Y      200
 
-static void show_message( MenuWork *work, u_long *ot, SELECT_INFO *info )
+static void show_message( MenuWork *work, OT_TYPE *ot, SELECT_INFO *info )
 {
     SPRT *sprt;
     KCB *kcb;
@@ -1109,7 +1109,7 @@ static void show_message( MenuWork *work, u_long *ot, SELECT_INFO *info )
 }
 // clang-format on
 
-STATIC void menu_radio_do_file_mode_save_memcard_8004B0A0(MenuWork *work, u_long *ot, SELECT_INFO *info)
+STATIC void menu_radio_do_file_mode_save_memcard_8004B0A0(MenuWork *work, OT_TYPE *ot, SELECT_INFO *info)
 {
     TextConfig config;
 

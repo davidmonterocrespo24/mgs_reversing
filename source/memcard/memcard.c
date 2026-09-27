@@ -1,4 +1,9 @@
 #include "memcard.h"
+#ifdef __psyz
+#ifndef O_NOWAIT
+#define O_NOWAIT 0x8000 /* PSY-Q non-blocking open; no-op on a hosted FS */
+#endif
+#endif
 
 #include <stdio.h>
 #include <sys/file.h>
@@ -127,6 +132,14 @@ static void memcard_set_sw_hw_card_fns(void)
 static int memcard_easy_format_test(int port)
 {
     char buffer[128];
+
+#ifdef __psyz
+    /* Also a blocking hardware probe (memcard_access_wait waits on a BIOS card
+     * event). No slot, no card: report an error, which the caller turns into
+     * last_op = 2 and the game treats as "no memory card in this port". */
+    (void)port;
+    return 2;
+#endif
 
     printf("easy_format_test\n");
     memset(buffer, 0, sizeof(buffer));
@@ -264,6 +277,15 @@ int memcard_check(int port)
     int sw_card_op;
     int hw_card_op;
 
+#ifdef __psyz
+    /* This polls the BIOS card driver and waits on events the hardware raises.
+     * There is no card slot here, so the loop below never terminates and the
+     * whole boot stops inside memcard_init(). Report "no card present", which
+     * is a state the game already handles -- it is also simply true. */
+    gMemCards[port].last_op = 2; /* error / absent */
+    return 0;
+#endif
+
     chan = port * 16;
     retries = 0;
 
@@ -349,7 +371,12 @@ int memcard_check(int port)
                 gMemCards[port].last_op = 5;
 
                 {
+#ifdef __psyz
+                    /* pinning $v0 only serves the matching build */
+                    int ret;
+#else
                     register int ret asm("v0");
+#endif
                     ret = 0x80000000;
                     asm("" :: "r"(ret));
                 }

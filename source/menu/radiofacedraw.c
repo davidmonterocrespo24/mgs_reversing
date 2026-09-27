@@ -13,8 +13,8 @@
 STATIC RECT rect_800AB6D8 = {1008, 432, 5, 20};
 STATIC int  dword_800AB6E0 = 0;
 
-menu_chara_struct *dword_800ABB38;
-menu_chara_struct *SECTION(".sbss") dword_800ABB38; // force gp
+extern menu_chara_struct *dword_800ABB38;
+extern menu_chara_struct* dword_800ABB38; /* defined in radiomes.c */
 
 int SECTION(".sbss") dword_800ABB3C;
 

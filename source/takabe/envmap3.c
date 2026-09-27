@@ -27,11 +27,14 @@ MATRIX envmap3_scale = {{{63, 0, 0}, {0, 63, 0}, {0, 0, 63}}, {0, 0, 0}};
 #define EXEC_LEVEL GV_ACTOR_DAEMON
 
 // clang-format off
+#ifndef __psyz
 #define gte_read_normal(x, y, z) __asm__ volatile (             \
         "mfc2   %0, $9;"                                        \
         "mfc2   %1, $10;"                                       \
         "mfc2   %2, $11"                                        \
         : "=r"(x), "=r"(y), "=r"(z))
+#endif /* __psyz: psyz provides a portable form */
+
 // clang-format on
 
 void Envmap3_800C9F14(DG_MDL *mdl)

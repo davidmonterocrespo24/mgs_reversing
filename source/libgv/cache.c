@@ -282,7 +282,15 @@ int GV_LoadInit( void *data, int name, int cache_mode )
 
     if ( cache_mode == GV_INIT_NOCACHE )
     {
-        func = Loaders[ name / 65536 ];
+        {
+            int lidx = name / 65536;
+            if (lidx < 0 || lidx >= 26) {
+                printf("[gv] BAD loader ext %d id %d data %p" "\n",
+                       lidx, name & 0xFFFF, data);
+                return -1;
+            }
+            func = Loaders[ lidx ];
+        }
         if ( func != NULL )
         {
             ret = func( data, name );
@@ -303,7 +311,15 @@ int GV_LoadInit( void *data, int name, int cache_mode )
         }
         cp = EmptyCache;
         SetCurrentTag( data, name, cache_mode );
-        func = Loaders[ name / 65536 ];
+        {
+            int lidx = name / 65536;
+            if (lidx < 0 || lidx >= 26) {
+                printf("[gv] BAD loader ext %d id %d data %p" "\n",
+                       lidx, name & 0xFFFF, data);
+                return -1;
+            }
+            func = Loaders[ lidx ];
+        }
         if ( func != NULL )
         {
             ret = func( data, name );

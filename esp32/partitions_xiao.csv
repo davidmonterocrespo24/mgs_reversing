@@ -1,0 +1,15 @@
+# XIAO ESP32S3 Sense - 8 MB flash
+#
+# Half the flash of the Waveshare board, and the layout has to give something
+# up. It gives up the data partition entirely: that existed to hold a trimmed
+# STAGE.DIR when the microSD was unreliable, and on this board the card is on
+# the expansion board and carries the full 68.6 MB archive. Nothing is read
+# from flash but the firmware itself.
+#
+# The app gets 3 MB against a binary that is currently 1.1 MB, so there is room
+# for the image to double before this needs revisiting.
+#
+# Name,   Type, SubType, Offset,  Size
+nvs,      data, nvs,     0x9000,  0x6000
+phy_init, data, phy,     0xf000,  0x1000
+factory,  app,  factory, 0x10000, 0x300000

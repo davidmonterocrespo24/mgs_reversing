@@ -43,13 +43,32 @@ static int SetupNextFile( DATACNF_TAG *tag, CDBIOS_TASK *task )
     switch ( region )
     {
     case 's': // .sound
+#ifdef __psyz
+        /* Sound data is streamed straight into SPU RAM through the SD_*
+         * loaders, and those wait on transfer states the software SPU does
+         * not raise yet (sd_init's SpuMalloc already failed:
+         * spu_wave_start_ptr=ffffffff). The first wvx made PcmRead spin
+         * forever inside the load callback and the whole stage load froze at
+         * its final file. Until the audio phase, stream sound files to
+         * nowhere: NULL buffer means "consume the sectors, keep nothing",
+         * which is the same mechanism the dev build uses for the overlay. */
+        if ( tag->ext != 'b' )
+        {
+            task->buffer = NULL;
+            info->size = tag->size;
+            info->mode = tag->mode;
+            return 1;
+        }
+#endif
         switch ( tag->ext )
         {
         case 'b': // *.bin
             /* set the overlay's load address */
             task->buffer = StageCharacterEntries;
-        #ifdef DEV_EXE
-            task->buffer = NULL; // no overlay in the dev variant
+        #if defined(DEV_EXE) || defined(__psyz)
+            /* MIPS machine code from the disc must never land on top of the
+             * native table: the stage code is linked into this executable */
+            task->buffer = NULL;
         #endif
             break;
 
@@ -356,6 +375,18 @@ static int LoadDataArchives( FS_STAGE_INFO *info )
             ptr = ntag + 1;
         }
 
+#ifdef __psyz
+        {
+            static int dar_log = 0;
+            if (dar_log > 0)
+            {
+                dar_log--;
+                printf("[dar] ntag %p ext '%c'(%d) id %d size %d region %d rem %d\n",
+                       (void *)ntag2, (ntag2->ext >= 32 && ntag2->ext < 127) ? ntag2->ext : '?',
+                       ntag2->ext, ntag2->id, ntag2->size, region, info->remaining);
+            }
+        }
+#endif
         GV_LoadInit( ptr, ( ( ntag2->ext - 'a' ) << 16 ) | ntag2->id, region );
         info->remaining -= size;
 
@@ -454,12 +485,23 @@ void *FS_LoadStageRequest( const char *dirname )
 
 int FS_LoadStageSync( void *info )
 {
+#ifdef __psyz
+    /* On the console the CD BIOS task delivered sectors on its own, so the ||
+     * below could short-circuit ReadSync away without consequence. Here the
+     * delivery happens INSIDE CDBIOS_ReadSync, so short-circuiting it starves
+     * the transfer: the parser reports "waiting for data" forever and the data
+     * never arrives. Run both, in parse-then-deliver order, every poll. */
+    int busy_parse = LoadStageFiles( info );
+    int busy_read = CDBIOS_ReadSync();
+    return ( busy_parse != 0 || busy_read > 0 ) ? 1 : 0;
+#else
     int ret = 0;
     if ( LoadStageFiles( info ) != 0 || CDBIOS_ReadSync() > 0 )
     {
         ret = 1;
     }
     return ret;
+#endif
 }
 
 void FS_LoadStageComplete( void *info )

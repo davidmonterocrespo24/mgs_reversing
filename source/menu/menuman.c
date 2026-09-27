@@ -1,4 +1,28 @@
 #define __MENU_MENUMAN_C__
+/* Draw the codec conversations (the Colonel calls) rather than answering them
+ * invisibly.
+ *
+ * Held at 0. Turning it on is a one-flag experiment and it has been run: the
+ * face group asks for 417792 bytes -- 408 KB out of GV_PACKET_MEMORY0, not the
+ * 150 KB the code's own comment suggests -- and the allocation fails on this
+ * board. With the real module in charge and the headless drain off, the call
+ * is then never answered at all, so the story stops: s00a stays on its first
+ * pass and the dock is never built (4 objects queued instead of 3000).
+ *
+ * The memory half is now solved -- the group loads into a PSRAM reserve (see
+ * port/psyz_port.c) and 417792 bytes arrive without a crash. What is still
+ * missing is the INDEX: the start sector handed to FS_LoadFileRequest comes
+ * back as 15658670, and FACE.DAT is 3.5 MB, about 1700 sectors. That value is
+ * uninitialised memory, so the table mapping a call to its position in the
+ * file has not been read yet. Faces parsed: 0.
+ *
+ * Held at 0 until that index is loaded, because with the module in charge and
+ * the headless drain off, a call that cannot draw is a call that is never
+ * answered -- and then s00a never gets past its first pass. */
+#ifndef MGS_CODEC_SCREEN
+#define MGS_CODEC_SCREEN 0
+#endif
+
 #include "menuman.h"
 
 #include <stdio.h>
@@ -16,7 +40,7 @@ extern unsigned char menu_primbuffers[2][8192];
 extern int MENU_PrimUse;
 
 extern GV_PAD *GM_CurrentPadData;
-GV_PAD        *GM_CurrentPadData;
+extern GV_PAD        *GM_CurrentPadData;
 
 void menu_texture_init_8003CC94(MenuWork *work);
 void menu_radar_init_8003B474(MenuWork *work);
@@ -59,7 +83,13 @@ TextConfig gMenuTextConfig_8009E2E4 = {0, 0, 0, 0x64808080};
 
 void menuman_act_800386A4(MenuWork *work)
 {
-    u_long *pOtStart;
+    OT_TYPE *pOtStart;
+    /* This used to return immediately under __psyz, which switched off the
+     * whole HUD -- the soliton radar included. The reason given was that some
+     * drawer still emitted hand-packed PSX tags that desynced the GPU stream,
+     * but nothing in source/menu/ builds a tag that way under __psyz any more:
+     * the only two such idioms left are in an #else arm. The stub outlived the
+     * problem it was written for. */
     int     idx_as_flag;
     int     field_28_flags;
     int     i;
@@ -73,7 +103,34 @@ void menuman_act_800386A4(MenuWork *work)
         idx_as_flag = 1;
         if (GM_GameStatus >= 0)
         {
+#ifdef __psyz
+            /* MGS_CODEC_SCREEN picks which of the two answers a call.
+             *
+             * 0: the headless drain -- marks the call answered and dispatches
+             *    its procedure, so the story advances, but nothing is drawn.
+             *    That is what shipped while the face path was known to crash.
+             * 1: the real radio module, enabled in the mask below. It walks
+             *    FACE.DAT and draws the conversation. Both at once would run
+             *    each call's procedure twice, so it is one or the other. */
+            if (!MGS_CODEC_SCREEN)
+            {
+                void MENU_RadioDrainHeadless(void);
+                MENU_RadioDrainHeadless();
+            }
+#endif
             field_28_flags = work->field_28_flags;
+#ifdef __psyz
+            /* Bring the HUD back one drawer at a time rather than all eight.
+             *
+             * Restoring the lot at once crashed immediately, but not in a
+             * drawer: MENU_RADIO's codec task walks FACE.DAT and took a null
+             * pointer in radioanim.c:145. That is a whole separate subsystem
+             * (the codec faces) and nothing the player needs to move around,
+             * so it stays off while the radar -- which is what tells you where
+             * you are -- comes back. Widen this mask as each one is proven. */
+            field_28_flags &= (1 << MENU_RADAR) |
+                              (MGS_CODEC_SCREEN ? (1 << MENU_RADIO) : 0);
+#endif
             for (i = 0; i < MENU_MODULE_MAX; i++)
             {
                 if ((field_28_flags & idx_as_flag) != 0)

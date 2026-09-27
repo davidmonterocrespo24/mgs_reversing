@@ -5,6 +5,14 @@
  *      inline_n.h
  */
 
+#ifdef __psyz
+/* These macros are raw MIPS COP2 assembly and cannot be assembled for any other
+ * target. PSY-Z implements the same GTE as portable C and exposes it through
+ * <libgte.h>, so on a non-PSX build we defer to that instead of emitting asm.
+ * Anything PSY-Z does not yet cover shows up as an undefined symbol at link
+ * time, which is the honest way to find the remaining gap. */
+#include <libgte.h>
+#else
 /*
  * Type 1 functions
  */
@@ -1445,3 +1453,5 @@
         : "$12" )
 
 /* clang-format on */
+
+#endif /* __psyz */

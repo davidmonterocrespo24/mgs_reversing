@@ -40,6 +40,18 @@ void *GV_AllocResidentMemory( long size )
     // decrement the bottom of the resident memory
     GV_ResidentMemoryBottom -= size;
 
+#if defined(__psyz)
+    {
+        /* the reservation's floor is the real limit; StageCharacterEntries is a
+         * native link-time address here and comparing against it is noise */
+        extern unsigned char mgs_main_ram[];
+        if (GV_ResidentMemoryBottom < mgs_main_ram)
+        {
+            printf("Resident Memory Over !!\n");
+        }
+    }
+    return GV_ResidentMemoryBottom;
+#endif
 #ifdef DEV_EXE
     // dev_exe has to compare to _bss_orgend since the overlay base pointer
     // used by the OG code will be pointing somewhere in the .data section.

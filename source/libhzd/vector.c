@@ -32,8 +32,8 @@ int HZD_HazardReaction( SVECTOR *vects, int n_vects, int range, SVECTOR *react )
         return 1;
     }
 
-    CopyToHzdVec(0x1F80000C, vects);
-    area = Len2D((SVECTOR *)0x1F80000C);
+    CopyToHzdVec((SCRPAD_ADDR + 0x00C), vects);
+    area = Len2D((SVECTOR *)(SCRPAD_ADDR + 0x00C));
 
     if ( area >= range )
     {
@@ -47,32 +47,32 @@ int HZD_HazardReaction( SVECTOR *vects, int n_vects, int range, SVECTOR *react )
 
     if ( n_vects == 2 )
     {
-        CopyToHzdVec(0x1F800010, &vects[1]);
-        area2 = Len2D((SVECTOR *)0x1F800010);
+        CopyToHzdVec((SCRPAD_ADDR + 0x010), &vects[1]);
+        area2 = Len2D((SVECTOR *)(SCRPAD_ADDR + 0x010));
 
         if ( area2 < range )
         {
-            Mul2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F80000C, range, area);
-            Mul2D((SVECTOR *)0x1F800018, (SVECTOR *)0x1F800010, range, area2);
+            Mul2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x00C), range, area);
+            Mul2D((SVECTOR *)(SCRPAD_ADDR + 0x018), (SVECTOR *)(SCRPAD_ADDR + 0x010), range, area2);
 
-            Sub2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F800014, (SVECTOR *)0x1F80000C);
-            Sub2D((SVECTOR *)0x1F800018, (SVECTOR *)0x1F800018, (SVECTOR *)0x1F800010);
+            Sub2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x00C));
+            Sub2D((SVECTOR *)(SCRPAD_ADDR + 0x018), (SVECTOR *)(SCRPAD_ADDR + 0x018), (SVECTOR *)(SCRPAD_ADDR + 0x010));
 
-            area3 = Dot2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F800014);
-            area4 = Dot2D((SVECTOR *)0x1F800018, (SVECTOR *)0x1F800018);
-            area5 = Dot2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F800018);
+            area3 = Dot2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x014));
+            area4 = Dot2D((SVECTOR *)(SCRPAD_ADDR + 0x018), (SVECTOR *)(SCRPAD_ADDR + 0x018));
+            area5 = Dot2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x018));
 
             if ((area5 < area3) && (area5 < area4))
             {
-                area6 = Det2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F800018);
+                area6 = Det2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x018));
 
                 if ( area6 != 0 )
                 {
-                    pVec1 = (SVECTOR *)0x1F800014;
+                    pVec1 = (SVECTOR *)(SCRPAD_ADDR + 0x014);
 
                     temp = pVec1->vy * area4;
 
-                    pVec2 = (SVECTOR *)0x1F800018;
+                    pVec2 = (SVECTOR *)(SCRPAD_ADDR + 0x018);
 
                     react->vx = (temp - pVec2->vy * area3) / area6;
 
@@ -91,10 +91,10 @@ int HZD_HazardReaction( SVECTOR *vects, int n_vects, int range, SVECTOR *react )
         }
     }
 
-    Mul2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F80000C, range, area);
-    Sub2D((SVECTOR *)0x1F800014, (SVECTOR *)0x1F80000C, (SVECTOR *)0x1F800014);
+    Mul2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x00C), range, area);
+    Sub2D((SVECTOR *)(SCRPAD_ADDR + 0x014), (SVECTOR *)(SCRPAD_ADDR + 0x00C), (SVECTOR *)(SCRPAD_ADDR + 0x014));
 
-    CopyFromHzdVec(react, (SVECTOR *)0x1F800014);
+    CopyFromHzdVec(react, (SVECTOR *)(SCRPAD_ADDR + 0x014));
     return 1;
 }
 

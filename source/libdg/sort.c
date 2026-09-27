@@ -1,21 +1,21 @@
 #include "libdg.h"
 
 typedef struct _SCRATCHPAD_UNK {
-    u_int **buf;
-    u_long *ot;
-    int     len;
+    OT_TYPE *buf;   /* the 256-bucket ordering table of the first radix pass */
+    OT_TYPE *ot;
+    int      len;
 } SCRATCHPAD_UNK;
 
-extern unsigned int *ptr_800B1400[256];
+extern OT_TYPE ptr_800B1400[256];
 
 static inline SCRATCHPAD_UNK * get_scratch(void)
 {
-    return (SCRATCHPAD_UNK *)0x1f800000;
+    return (SCRATCHPAD_UNK *)(SCRPAD_ADDR + 0x000);
 }
 
-static inline unsigned int ** get_buf(void)
+static inline OT_TYPE * get_buf(void)
 {
-    return *(unsigned int ***)0x1f800000;
+    return ((SCRATCHPAD_UNK *)(SCRPAD_ADDR + 0x000))->buf;
 }
 
 static inline int DG_GetCurrentGroupID(void)
@@ -25,17 +25,17 @@ static inline int DG_GetCurrentGroupID(void)
 
 void DG_SortChanl( DG_CHANL *chanl, int idx )
 {
-    unsigned int *list;
-    unsigned int **buf;
+    void    *list;
+    void    *list_next;
+    OT_TYPE *buf;
 
-    u_long *ot;
-    u_long *ot2;
-    u_long *indexed_ot;
-    u_long *ot_ptr;
+    OT_TYPE *ot;
+    OT_TYPE *ot2;
+    OT_TYPE *indexed_ot;
+    OT_TYPE *ot_ptr;
 
     int i;
 
-    unsigned int index;
     int index2;
     unsigned int len;
 
@@ -56,17 +56,27 @@ void DG_SortChanl( DG_CHANL *chanl, int idx )
     buf = get_buf();
     ot = pad->ot;
 
+    /* Second pass of a two-pass radix sort on the 16-bit depth. DG_DivideChanl
+     * bucketed by the low byte into `buf` and parked the high byte in the tag's
+     * length field; here each chain is re-bucketed by that high byte, and the
+     * length is finally set to the real POLY_GT4 payload size.
+     *
+     * On PSY-Q both halves shared one packed 32-bit tag (24-bit next pointer +
+     * 8-bit length). PSY-Z splits them into separate words because a host
+     * pointer does not fit in 24 bits, so the same operation is expressed as
+     * addPrim() plus setlen(). */
     for (i = 256; i > 0; i--)
     {
-        list = *buf++;
+        list = (void *)getaddr(buf);
+        buf++;
 
         while (list != 0)
         {
-            index = *list;
-            ot_ptr = &ot[index >> 24];
-            *list = (*ot_ptr) | 0x0c000000;
-            *ot_ptr = (unsigned int)list;
-            list = (unsigned int *)(index & 0xffffff);
+            list_next = (void *)getaddr(list);
+            ot_ptr = &ot[getlen(list)];
+            addPrim(ot_ptr, list);
+            setlen(list, 0x0c);
+            list = list_next;
         }
     }
 
@@ -87,18 +97,16 @@ void DG_SortChanl( DG_CHANL *chanl, int idx )
             continue;
         }
 
-        // TODO: clean up
-        ((SCRATCHPAD_UNK *)0x1f800000)->len = pPrim->raise;
+        pad->len = pPrim->raise;
 
         prim_count = pPrim->prim_count;
         prim = (char *)pPrim->packs[idx];
         prim_size = (short)pPrim->psize;
 
-        do {} while (0);
-        ot2 = *(u_long **)0x1f800004;
-
-        do {} while (0);
-        len = *(unsigned int *)0x1f800008;
+        /* both were read back through raw scratchpad addresses; they are the
+         * same two fields the struct already names */
+        ot2 = pad->ot;
+        len = (unsigned int)pad->len;
 
         while (--prim_count >= 0)
         {

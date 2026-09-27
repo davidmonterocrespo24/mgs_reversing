@@ -1,0 +1,7 @@
+## Managed components for the MGS firmware.
+##
+## The ILI9341 panel driver is not part of ESP-IDF itself (only ST7789 and
+## NT35510 are built in), so the handheld build pulls it from the component
+## registry. The Waveshare build never touches it.
+dependencies:
+  espressif/esp_lcd_ili9341: "~1.2.0"

@@ -64,7 +64,7 @@ static void DrawHudNumbers(Work *work)
 {
     int r, g, b;
     TILE_1 *tile;
-    u_long *ot;
+    OT_TYPE *ot;
 
     short a1;
     short a2;
@@ -184,7 +184,7 @@ static void DrawHudBarGraph(Work *work)
     LINE_F2 *line;
     POLY_F4 *poly;
     DR_TPAGE *tpage;
-    u_long *ot;
+    OT_TYPE *ot;
     int y, y2;
 
     if (work->timer < HUD_DISP_DELAY)

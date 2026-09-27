@@ -1702,7 +1702,13 @@ SVECTOR s00a_dword_800C33DC = { -1024, 0,   0 };
 SVECTOR s00a_dword_800C33E4 = { 0,     0, 100 };
 SVECTOR s00a_dword_800C33EC = { -1024, 0,   0 };
 
+#ifdef __psyz
+/* patched in place at runtime (digits spliced into the message), so it
+ * cannot live in read-only memory on a target with a real .rodata */
+char *s00a_off_800C33F4[3] = {
+#else
 const char *s00a_off_800C33F4[3] = {
+#endif
     "RATION",
     "SOCOM/BULLET * 12",
     "FA-MAS/BULLET * 25"

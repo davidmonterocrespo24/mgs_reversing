@@ -51,6 +51,7 @@ static void Act(Work *work)
         GM_StreamPlayStop();
 
         work->actor.act = (GV_ACTFUNC)Act2;
+        { extern const char *mgs_dbg_undraw_src; mgs_dbg_undraw_src = "game/cancel.c:54"; }
         DG_UnDrawFrameCount = 0x7FFF0000;
         work->timer = 0;
         GV_PauseLevel |= GV_PAUSE_MENU;

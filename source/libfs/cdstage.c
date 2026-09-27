@@ -95,6 +95,22 @@ void FS_CdStageFileInit(void *buffer, int sector)
     GV_CopyMemory((char *)buffer + 4, fs_dir_info.table_buf, table_size);
 
     fs_dir_info.n_stages = table_size / sizeof(FS_DIR_ENTRY);
+
+#ifdef __psyz
+    {
+        /* The whole stage system hangs off this table: if it comes out empty
+         * every FS_LoadStageRequest answers "NOT FOUND" and the game idles
+         * forever with nothing to load. Print what was actually parsed. */
+        int k;
+        printf("[dir] table_size %d -> %d stages, base sector %d\n",
+               table_size, fs_dir_info.n_stages, fs_dir_info.pos);
+        for (k = 0; k < fs_dir_info.n_stages && k < 8; k++)
+        {
+            printf("[dir]   %-8.8s at %d\n", fs_dir_info.table_buf[k].name,
+                   fs_dir_info.table_buf[k].offset);
+        }
+    }
+#endif
 }
 
 /**
@@ -112,6 +128,24 @@ int FS_CdGetStageFileTop(char *dirname)
     int i;
 
     dir = fs_dir_info.table_buf;
+
+#ifdef __psyz
+    /* The table parses correctly at init time, so if a lookup still fails the
+     * interesting question is what the table looks like NOW -- the resident
+     * heap it lives in is rewound by the game manager after FS starts up. */
+    {
+        int k;
+        if (0) printf("[dir?] want '%s' (%d,%d,%d,%d) among %d at %p\n", dirname,
+               dirname[0], dirname[1], dirname[2], dirname[3],
+               fs_dir_info.n_stages, (void*)dir);
+        for (k = 0; k < fs_dir_info.n_stages && k < 8; k++)
+        {
+            if (0) printf("[dir?]   [%d] '%-8.8s' (%d,%d,%d,%d) at %d\n", k,
+                   dir[k].name, dir[k].name[0], dir[k].name[1], dir[k].name[2],
+                   dir[k].name[3], dir[k].offset);
+        }
+    }
+#endif
 
     for (i = fs_dir_info.n_stages; i > 0; i--)
     {

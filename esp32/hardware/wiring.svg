@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" width="1100" height="760" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13">
+  <!-- Handheld console wiring: XIAO ESP32S3 Sense + ILI9341 320x240 SPI panel
+       + 2-axis analog stick + 8 buttons (6 on one resistor ladder, 2 direct).
+       Net-label style: pins that carry the same label are wired together. -->
+  <defs>
+    <style>
+      .box{fill:#f7f8fa;stroke:#2b3440;stroke-width:2}
+      .chip{fill:#1f2a37;stroke:#111;stroke-width:2}
+      .pin{fill:#e8b64c;stroke:#6b4e12}
+      .t{fill:#1b2330}
+      .tw{fill:#ffffff}
+      .small{font-size:11px}
+      .title{font-size:20px;font-weight:700}
+      .h{font-size:15px;font-weight:700}
+      .w{stroke-width:2.2;fill:none}
+      .spi{stroke:#2f6fd6}
+      .ctl{stroke:#c0392b}
+      .pwr{stroke:#d35400}
+      .gnd{stroke:#222}
+      .adc{stroke:#1e8449}
+      .net rect{stroke-width:1.5;rx:4}
+      .note{fill:#5a6572;font-size:11.5px}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="760" fill="#ffffff"/>
+  <text x="24" y="34" class="title t">ESP32-S3 handheld console — wiring</text>
+  <text x="24" y="54" class="note">XIAO ESP32S3 Sense · ILI9341 320×240 SPI panel · analog stick · 8 buttons. Pins with the same label are wired together.</text>
+
+  <!-- ===================== XIAO ===================== -->
+  <rect x="420" y="110" width="210" height="330" rx="14" class="chip"/>
+  <text x="525" y="140" text-anchor="middle" class="h tw">XIAO ESP32S3</text>
+  <text x="525" y="158" text-anchor="middle" class="small tw">Sense (built-in microSD)</text>
+  <text x="525" y="420" text-anchor="middle" class="small tw">USB-C: power + serial console</text>
+
+  <!-- left pins D0..D6 -->
+  <g class="small">
+    <g><rect x="408" y="176" width="14" height="14" class="pin"/><text x="436" y="188" class="tw">D0 · GPIO1</text></g>
+    <g><rect x="408" y="211" width="14" height="14" class="pin"/><text x="436" y="223" class="tw">D1 · GPIO2</text></g>
+    <g><rect x="408" y="246" width="14" height="14" class="pin"/><text x="436" y="258" class="tw">D2 · GPIO3</text></g>
+    <g><rect x="408" y="281" width="14" height="14" class="pin"/><text x="436" y="293" class="tw">D3 · GPIO4</text></g>
+    <g><rect x="408" y="316" width="14" height="14" class="pin"/><text x="436" y="328" class="tw">D4 · GPIO5</text></g>
+    <g><rect x="408" y="351" width="14" height="14" class="pin"/><text x="436" y="363" class="tw">D5 · GPIO6</text></g>
+    <g><rect x="408" y="386" width="14" height="14" class="pin"/><text x="436" y="398" class="tw">D6 · GPIO43</text></g>
+  </g>
+  <!-- right pins: 5V GND 3V3 D10 D9 D8 D7 -->
+  <g class="small">
+    <g><rect x="628" y="176" width="14" height="14" class="pin"/><text x="614" y="188" text-anchor="end" class="tw">5V</text></g>
+    <g><rect x="628" y="211" width="14" height="14" class="pin"/><text x="614" y="223" text-anchor="end" class="tw">GND</text></g>
+    <g><rect x="628" y="246" width="14" height="14" class="pin"/><text x="614" y="258" text-anchor="end" class="tw">3V3</text></g>
+    <g><rect x="628" y="281" width="14" height="14" class="pin"/><text x="614" y="293" text-anchor="end" class="tw">D10 · GPIO9</text></g>
+    <g><rect x="628" y="316" width="14" height="14" class="pin"/><text x="614" y="328" text-anchor="end" class="tw">D9 · GPIO8</text></g>
+    <g><rect x="628" y="351" width="14" height="14" class="pin"/><text x="614" y="363" text-anchor="end" class="tw">D8 · GPIO7</text></g>
+    <g><rect x="628" y="386" width="14" height="14" class="pin"/><text x="614" y="398" text-anchor="end" class="tw">D7 · GPIO44</text></g>
+  </g>
+
+  <!-- XIAO left-side net labels -->
+  <g class="small">
+    <line x1="408" y1="183" x2="330" y2="183" class="w adc"/><rect x="250" y="173" width="80" height="20" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="290" y="187" text-anchor="middle" class="t">STICK_X</text>
+    <line x1="408" y1="218" x2="330" y2="218" class="w adc"/><rect x="250" y="208" width="80" height="20" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="290" y="222" text-anchor="middle" class="t">STICK_Y</text>
+    <line x1="408" y1="253" x2="330" y2="253" class="w adc"/><rect x="250" y="243" width="80" height="20" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="290" y="257" text-anchor="middle" class="t">LADDER</text>
+    <line x1="408" y1="288" x2="330" y2="288" class="w ctl"/><rect x="250" y="278" width="80" height="20" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="290" y="292" text-anchor="middle" class="t">LCD_CS</text>
+    <line x1="408" y1="323" x2="330" y2="323" class="w ctl"/><rect x="250" y="313" width="80" height="20" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="290" y="327" text-anchor="middle" class="t">LCD_RST</text>
+    <line x1="408" y1="358" x2="330" y2="358" class="w ctl"/><rect x="250" y="348" width="80" height="20" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="290" y="362" text-anchor="middle" class="t">BTN_D5</text>
+    <line x1="408" y1="393" x2="330" y2="393" class="w ctl"/><rect x="250" y="383" width="80" height="20" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="290" y="397" text-anchor="middle" class="t">LCD_DC</text>
+  </g>
+  <!-- XIAO right-side net labels -->
+  <g class="small">
+    <line x1="642" y1="183" x2="700" y2="183" class="w pwr"/><rect x="700" y="173" width="70" height="20" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="735" y="187" text-anchor="middle" class="t">5V</text>
+    <line x1="642" y1="218" x2="700" y2="218" class="w gnd"/><rect x="700" y="208" width="70" height="20" fill="#eeeeee" stroke="#222" rx="4"/><text x="735" y="222" text-anchor="middle" class="t">GND</text>
+    <line x1="642" y1="253" x2="700" y2="253" class="w pwr"/><rect x="700" y="243" width="70" height="20" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="735" y="257" text-anchor="middle" class="t">3V3</text>
+    <line x1="642" y1="288" x2="700" y2="288" class="w spi"/><rect x="700" y="278" width="70" height="20" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="735" y="292" text-anchor="middle" class="t">MOSI</text>
+    <line x1="642" y1="323" x2="700" y2="323" class="w spi"/><rect x="700" y="313" width="70" height="20" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="735" y="327" text-anchor="middle" class="t">MISO</text>
+    <line x1="642" y1="358" x2="700" y2="358" class="w spi"/><rect x="700" y="348" width="70" height="20" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="735" y="362" text-anchor="middle" class="t">SCK</text>
+    <line x1="642" y1="393" x2="700" y2="393" class="w ctl"/><rect x="700" y="383" width="70" height="20" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="735" y="397" text-anchor="middle" class="t">BTN_D7</text>
+  </g>
+
+  <!-- ===================== PANEL ===================== -->
+  <rect x="820" y="90" width="250" height="405" class="box" rx="8"/>
+  <text x="945" y="116" text-anchor="middle" class="h t">ILI9341 panel</text>
+  <text x="945" y="133" text-anchor="middle" class="small t">320×240 SPI (module with XPT2046 touch)</text>
+  <g class="small">
+    <!-- pin rows: header pin name + net -->
+    <text x="838" y="162" class="t">VCC</text>   <rect x="970" y="150" width="84" height="18" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="1012" y="163" text-anchor="middle" class="t">5V *</text>
+    <text x="838" y="186" class="t">GND</text>   <rect x="970" y="174" width="84" height="18" fill="#eeeeee" stroke="#222" rx="4"/><text x="1012" y="187" text-anchor="middle" class="t">GND</text>
+    <text x="838" y="210" class="t">CS</text>    <rect x="970" y="198" width="84" height="18" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="1012" y="211" text-anchor="middle" class="t">LCD_CS</text>
+    <text x="838" y="234" class="t">RESET</text> <rect x="970" y="222" width="84" height="18" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="1012" y="235" text-anchor="middle" class="t">LCD_RST</text>
+    <text x="838" y="258" class="t">DC/RS</text> <rect x="970" y="246" width="84" height="18" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="1012" y="259" text-anchor="middle" class="t">LCD_DC</text>
+    <text x="838" y="282" class="t">SDI (MOSI)</text><rect x="970" y="270" width="84" height="18" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="1012" y="283" text-anchor="middle" class="t">MOSI</text>
+    <text x="838" y="306" class="t">SCK</text>   <rect x="970" y="294" width="84" height="18" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="1012" y="307" text-anchor="middle" class="t">SCK</text>
+    <text x="838" y="330" class="t">LED</text>   <rect x="970" y="318" width="84" height="18" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="1012" y="331" text-anchor="middle" class="t">3V3</text>
+    <text x="838" y="354" class="t">SDO (MISO)</text><rect x="970" y="342" width="84" height="18" fill="#eaf1fb" stroke="#2f6fd6" rx="4"/><text x="1012" y="355" text-anchor="middle" class="t">MISO</text>
+    <text x="838" y="378" class="t">T_CLK</text> <rect x="970" y="366" width="84" height="18" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="1012" y="379" text-anchor="middle" class="t">3V3</text>
+    <text x="838" y="402" class="t">T_CS</text>  <rect x="970" y="390" width="84" height="18" fill="#fdf2e9" stroke="#d35400" rx="4"/><text x="1012" y="403" text-anchor="middle" class="t">3V3 !</text>
+    <text x="838" y="426" class="t">T_DIN · T_DO · T_IRQ</text><text x="1012" y="426" text-anchor="middle" class="t">not connected</text>
+    <text x="838" y="450" class="t">Panel SD slot</text><text x="1012" y="450" text-anchor="middle" class="t">unused</text>
+  </g>
+  <text x="838" y="470" class="note">* 5V if the module has a regulator</text>
+  <text x="838" y="484" class="note">  (most do); otherwise 3V3.</text>
+
+  <!-- ===================== STICK ===================== -->
+  <rect x="24" y="90" width="210" height="196" class="box" rx="8"/>
+  <text x="129" y="114" text-anchor="middle" class="h t">Analog stick</text>
+  <text x="129" y="130" text-anchor="middle" class="small t">2 potentiometers (e.g. a drone gimbal)</text>
+  <!-- pot X -->
+  <g class="small">
+    <rect x="44" y="150" width="70" height="26" fill="#fff" stroke="#2b3440"/><text x="79" y="167" text-anchor="middle" class="t">pot X</text>
+    <text x="44" y="194" class="t">outer legs → 3V3 / GND</text>
+    <text x="44" y="210" class="t">wiper (middle) →</text>
+    <rect x="152" y="199" width="72" height="18" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="188" y="212" text-anchor="middle" class="t">STICK_X</text>
+    <rect x="130" y="150" width="70" height="26" fill="#fff" stroke="#2b3440"/><text x="165" y="167" text-anchor="middle" class="t">pot Y</text>
+    <text x="44" y="238" class="t">wiper (middle) →</text>
+    <rect x="152" y="227" width="72" height="18" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="188" y="240" text-anchor="middle" class="t">STICK_Y</text>
+    <text x="44" y="262" class="note">3V3, never 5V!</text>
+    <text x="44" y="276" class="note">The ADC is not 5V-tolerant.</text>
+  </g>
+
+  <!-- ===================== LADDER ===================== -->
+  <rect x="24" y="500" width="700" height="240" class="box" rx="8"/>
+  <text x="44" y="526" class="h t">6 buttons on a single pin: resistor ladder (D2 · LADDER)</text>
+  <!-- pull-up -->
+  <line x1="84" y1="560" x2="84" y2="580" class="w pwr"/>
+  <text x="70" y="554" class="small t">3V3</text>
+  <rect x="74" y="580" width="20" height="44" fill="#fff" stroke="#2b3440" stroke-width="2"/>
+  <text x="100" y="606" class="small t">10k</text>
+  <line x1="84" y1="624" x2="84" y2="650" class="w adc"/>
+  <!-- bus -->
+  <line x1="84" y1="650" x2="690" y2="650" class="w adc"/>
+  <rect x="20" y="640" width="60" height="20" fill="#e9f7ef" stroke="#1e8449" rx="4"/><text x="50" y="654" text-anchor="middle" class="small t">LADDER</text>
+  <!-- 6 branches: resistor then switch to GND -->
+  <g class="small">
+    <!-- branch template at x -->
+    <g transform="translate(160,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">0 Ω</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 1</text><text x="-30" y="616" class="note">(wire)</text>
+    </g>
+    <g transform="translate(260,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">2k2</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 2</text>
+    </g>
+    <g transform="translate(360,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">4k7</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 3</text>
+    </g>
+    <g transform="translate(460,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">10k</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 4</text>
+    </g>
+    <g transform="translate(560,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">22k</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 5</text>
+    </g>
+    <g transform="translate(660,0)">
+      <line x1="0" y1="650" x2="0" y2="662" class="w adc"/><rect x="-10" y="662" width="20" height="28" fill="#fff" stroke="#2b3440" stroke-width="2"/><text x="14" y="681" class="t">47k</text>
+      <line x1="0" y1="690" x2="0" y2="700" class="w gnd"/><line x1="-10" y1="700" x2="12" y2="708" class="w gnd"/><line x1="0" y1="712" x2="0" y2="724" class="w gnd"/><text x="-9" y="736" class="t">GND</text>
+      <text x="-30" y="600" class="t">pos 6</text>
+    </g>
+  </g>
+  <text x="160" y="560" class="note">Each branch: a resistor in series with a button to GND. When two are held at once,</text>
+  <text x="160" y="575" class="note">only the lowest-resistance one registers — so the pair of buttons you hold together</text>
+  <text x="160" y="590" class="note">gets its own pins (D5, D7) instead.</text>
+
+  <!-- ===================== DIRECT BUTTONS ===================== -->
+  <rect x="24" y="298" width="210" height="192" class="box" rx="8"/>
+  <text x="129" y="324" text-anchor="middle" class="h t">2 direct buttons</text>
+  <g class="small">
+    <rect x="44" y="344" width="72" height="18" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="80" y="357" text-anchor="middle" class="t">BTN_D5</text>
+    <text x="124" y="357" class="t">— button — GND</text>
+    <rect x="44" y="374" width="72" height="18" fill="#fdecea" stroke="#c0392b" rx="4"/><text x="80" y="387" text-anchor="middle" class="t">BTN_D7</text>
+    <text x="124" y="387" class="t">— button — GND</text>
+    <text x="44" y="416" class="note">No resistors: the chip's internal</text>
+    <text x="44" y="431" class="note">pull-up is enabled.</text>
+    <text x="44" y="452" class="note">4-leg buttons: use two legs</text>
+    <text x="44" y="466" class="note">DIAGONALLY (legs on the same</text>
+    <text x="44" y="480" class="note">side are already joined).</text>
+  </g>
+
+  <!-- ===================== NOTES ===================== -->
+  <rect x="760" y="510" width="310" height="230" class="box" rx="8"/>
+  <text x="776" y="534" class="h t">Lessons learned the hard way</text>
+  <g class="note">
+    <text x="776" y="558">• The panel NEEDS its GND. Without it, it</text>
+    <text x="786" y="573">back-powers through the data pins and stays white.</text>
+    <text x="776" y="596">• RESET to D4, not 3V3: without a real reset</text>
+    <text x="786" y="611">the ILI9341 does not start reliably.</text>
+    <text x="776" y="634">• T_CS to 3V3: left floating, the touch chip</text>
+    <text x="786" y="649">drives MISO and corrupts microSD reads.</text>
+    <text x="776" y="672">• The microSD is the Sense board's own slot</text>
+    <text x="786" y="687">(CS on internal GPIO21); shares SCK/MISO/MOSI.</text>
+    <text x="776" y="710">• Keep wires short: with jumper wires the</text>
+    <text x="786" y="725">panel SPI is only stable at 40 MHz.</text>
+  </g>
+</svg>

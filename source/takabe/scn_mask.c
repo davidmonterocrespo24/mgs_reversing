@@ -39,7 +39,7 @@ static void Act(Work *work)
 {
     int     i;
     TILE   *tile;
-    u_long *ot;
+    OT_TYPE *ot;
 
     ot = DG_ChanlOTag(0);
 

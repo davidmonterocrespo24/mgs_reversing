@@ -88,7 +88,7 @@ static void Act(Work *work)
     GV_MSG         *msg;
     int             n_msgs;
     int             speed;
-    u_long         *ot;
+    OT_TYPE         *ot;
     TexScrollPrims *prims;
     RECT           *rect;
     int             i;

@@ -7,7 +7,11 @@
 void SetExMask()
 {
     // unknown psyq-specific debug function ?
+#ifndef __psyz
     __asm__("break 1030");
+#else
+    /* PSY-Q debugger trap; nothing to break into elsewhere */
+#endif
 }
 
 void *mts_get_bss_tail(void)

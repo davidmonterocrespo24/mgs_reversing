@@ -43,7 +43,7 @@ unsigned short mes_list[] = { 0xD420, 0x745D };
 
 static void Act( Work *work )
 {
-    u_long *ot ;
+    OT_TYPE *ot;
     int     i, cols[2], mes ;
 
     OPERATOR() ;

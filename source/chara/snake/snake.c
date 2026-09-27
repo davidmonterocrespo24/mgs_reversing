@@ -15,19 +15,19 @@ extern short   word_8009EFC0[];
 
 //TODO: below defined in sna_init.c, need to remove gp hack
 extern SVECTOR           svector_800AB7CC;
-SVECTOR SECTION(".sbss") svector_800AB7CC;
+extern SVECTOR svector_800AB7CC;
 
 extern void           *GM_BombSeg;
-void *SECTION(".sbss") GM_BombSeg;
+extern void *GM_BombSeg;
 
 extern int           dword_800ABBA8;
-int SECTION(".sbss") dword_800ABBA8;
+extern int dword_800ABBA8;
 
 extern char           *dword_800ABBB4;
-char *SECTION(".sbss") dword_800ABBB4;
+extern char *dword_800ABBB4;
 
 extern HZD_FLR           *flr_800ABBB8[2];
-HZD_FLR *SECTION(".sbss") flr_800ABBB8[2];
+extern HZD_FLR *flr_800ABBB8[2];
 
 #define GetAction( work ) (work->body.action)
 

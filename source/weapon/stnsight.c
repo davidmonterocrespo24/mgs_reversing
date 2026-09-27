@@ -128,7 +128,7 @@ static void stnsight_act_helper_8006837C( Work *work )
     MENU_ResetText();
 }
 
-static void stnsight_act_helper_80068420( Work *work, u_long *ot )
+static void stnsight_act_helper_80068420( Work *work, OT_TYPE *ot )
 {
     u_short  pad_status;
     LINE_F4 *lines;
@@ -252,7 +252,7 @@ static void stnsight_act_helper_80068420( Work *work, u_long *ot )
     }
 }
 
-static void stnsight_act_helper_80068798( Work *work, u_long *ot )
+static void stnsight_act_helper_80068798( Work *work, OT_TYPE *ot )
 {
     LINE_F4 *lines = work->lines4[GV_Clock];
     DVECTOR *pos = work->pos;
@@ -288,7 +288,7 @@ static void stnsight_act_helper_80068798( Work *work, u_long *ot )
 }
 
 /* ミサイル照準セット */
-static void SetMissileRect( Work *work, u_long *ot )
+static void SetMissileRect( Work *work, OT_TYPE *ot )
 {
     LINE_F4        *lines;
     DVECTOR         sxy;
@@ -357,7 +357,7 @@ static void SetMissileRect( Work *work, u_long *ot )
     }
 }
 
-static void stnsight_act_helper_80068BF4( Work *work, u_long *ot )
+static void stnsight_act_helper_80068BF4( Work *work, OT_TYPE *ot )
 {
     int             x;
     int             s0;
@@ -397,7 +397,7 @@ static void stnsight_act_helper_80068BF4( Work *work, u_long *ot )
 
 static void Act( Work *work )
 {
-    u_long *ot;
+    OT_TYPE *ot;
     int     iVar3;
     int     iVar4;
     int     local_20[2];

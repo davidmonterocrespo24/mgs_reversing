@@ -7,6 +7,9 @@
 
 /* additional functions */
 
+#ifdef __psyz
+#include <libgte.h>
+#else
 #define gte_read_opz( r0 ) __asm__ volatile (                   \
         "mfc2   %0, $24"                                        \
         : "=r"( r0 ) )
@@ -60,3 +63,5 @@
         : "r"( r0 ), "r"( r1 ) )
 
 /* clang-format on */
+
+#endif /* __psyz */

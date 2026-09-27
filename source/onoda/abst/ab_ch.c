@@ -138,7 +138,7 @@ static void func_800C6C5C(Work *work, int index)
     }
 }
 
-static void func_800C6D9C(Work *work, u_long *ot)
+static void func_800C6D9C(Work *work, OT_TYPE *ot)
 {
     int       i, j;
     int       drawn;

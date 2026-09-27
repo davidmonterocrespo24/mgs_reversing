@@ -5,14 +5,39 @@
 #include <libapi.h>
 #include <libetc.h>
 #include "psxdefs.h"
+#include <stdarg.h>
 
 #include "common.h"
 #include "mts_new.h"
 #include "libsio/isio.h"
+#ifdef __psyz
+/* this file DEFINES the game's console stubs but does not include
+ * mts.h, so the redirect has to be repeated here */
+#undef fprintf
+#define fprintf mts_fprintf
+#endif
+#ifdef __psyz
+/* MIPS exception-frame slot indices; off the PSX the TCB is ours, so any
+ * stable numbering works as long as it is consistent. */
+#ifndef R_SR
+#define R_SR 32
+#endif
+#ifndef R_SP
+#define R_SP 29
+#endif
+#ifndef SR_IBIT3
+#define SR_IBIT3 0x00000400
+#endif
+#endif
 
+#ifndef __psyz
 int printf(/* const char *format, ... */);
 int fprintf(/* int stream, const char *format, ... */);
 int cprintf(/* const char *format, ... */);
+#else
+/* hosted libc already declares these with real prototypes */
+int cprintf(const char *format, ...);
+#endif
 
 /*---------------------------------------------------------------------------*/
 // extern BSS
@@ -62,11 +87,14 @@ STATIC int       mts_boot_stack_size = 0;
 
 static inline void task_start_body( void )
 {
+    MGS_WHERE("task_start_body: entry");
     ExitCriticalSection();
+    MGS_WHERE("task_start_body: after ExitCriticalSection");
 
     printf( "TASK START: %d %X\n",
             mts_active_task_800C0DB0,
             (unsigned int)mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].u.message );
+    MGS_WHERE("task_start_body: calling the callback");
     mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].u.callback();
     mts_ext_tsk();
     mts_assert( 0, 421, "task_start_body" );
@@ -156,6 +184,20 @@ static inline void mts_TransferExecution( int task )
 
     if ( change )
     {
+#ifdef __psyz
+        {
+            static int noisy = 12;
+            if ( noisy > 0 )
+            {
+                noisy--;
+                printf( "[yield] task %d -> %d (tid %d) ready %08x\n",
+                        task == mts_active_task_800C0DB0 ? -1 : task,
+                        mts_active_task_800C0DB0,
+                        (int)mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].tid,
+                        (unsigned)mts_ready_tasks_800C0DB4 );
+            }
+        }
+#endif
         ChangeTh( mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].tid );
     }
 }
@@ -165,6 +207,9 @@ static inline void mts_TransferExecutionWithinInterrupt( int task )
     int          change;
     struct ToT  *t;
     struct TCBH *h;
+#ifdef __psyz
+    int          prev_task = mts_active_task_800C0DB0;
+#endif
 
     if ( task == mts_active_task_800C0DB0 )
     {
@@ -178,17 +223,58 @@ static inline void mts_TransferExecutionWithinInterrupt( int task )
 
     if ( change )
     {
+#ifdef __psyz
+        /* The PSX published the new TCB through the Table-of-Tables at the
+         * fixed address 0x100, and the interrupt return then resumed the woken
+         * task. Writing through that pointer corrupts memory anywhere else, so
+         * do the switch explicitly instead -- WITHOUT parking the caller, which
+         * here is the vblank tick and must keep running. Leaving this empty is
+         * what left woken tasks marked ready but never scheduled. */
+        {
+            long ChangeThFromISR(unsigned long thread);
+            if ( !ChangeThFromISR(
+                     mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].tid) )
+            {
+                /* deferred: a cooperative ChangeTh is mid-flight on the game
+                 * core. Restore the bookkeeping so it matches the thread that
+                 * is really running; the woken task keeps its READY bit and
+                 * the next vblank tries again. */
+                mts_active_task_800C0DB0 = prev_task;
+            }
+        }
+        (void)t;
+        (void)h;
+#else
         // See PsyQ Run-Time Library Overview 4.4, chapter 2
         // "System Table Information, Example 1"
         t = (struct ToT *)0x100;            /* get ToT from the fixed kernel address */
         h = (struct TCBH *)((t + 1)->head); /* get current TCB from the ToT */
 
         h->entry = mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].tcb;
+#endif
     }
 }
 
 static inline struct TCB *mts_GetTcbEntry( char tcb_id )
 {
+#ifdef __psyz
+    /* The PSX BIOS keeps its Table-of-Tables at the fixed physical address
+     * 0x100. There is nothing there on any other target, so the pointer walk
+     * below yields garbage and the caller's `task->tcb->reg[R_SR] = ...` then
+     * writes through it -- corrupting whatever it lands on (here: the adjacent
+     * task->tid, which turned into -1 and broke every later ChangeTh).
+     *
+     * Own the storage instead. The thread model in port/esp32_threads.c does
+     * not read these registers; the table exists so the game's writes land
+     * somewhere harmless and per-task. */
+    static struct TCB psyz_tcbs[64];
+    unsigned idx = (unsigned char)tcb_id;
+    if ( idx >= sizeof(psyz_tcbs) / sizeof(psyz_tcbs[0]) )
+    {
+        idx = 0;
+    }
+    return &psyz_tcbs[idx];
+#else
     struct ToT *t;
     struct TCB *tcb_0;
 
@@ -198,6 +284,7 @@ static inline struct TCB *mts_GetTcbEntry( char tcb_id )
     tcb_0 = (struct TCB *)((t + 2)->head); /* get TCB array from the ToT */
 
     return &tcb_0[tcb_id];
+#endif
 }
 
 static inline void mts_SetActiveTaskAndTransferExecution( int tasknr )
@@ -288,6 +375,47 @@ void mts_VSyncCallback( void )
         }
     }
 
+#ifdef __psyz
+    if ( tasknr >= 0 )
+    {
+        static int noisy = 12;
+        if ( noisy > 0 )
+        {
+            noisy--;
+            printf( "[vbl] woke task %d, active %d, ready mask %08x\n",
+                    tasknr, mts_active_task_800C0DB0,
+                    (unsigned)mts_ready_tasks_800C0DB4 );
+        }
+    }
+#endif
+
+#ifdef __psyz
+    /* A task can be left READY yet never scheduled, and then the game stops
+     * dead with its wait chain empty and its ready bit set (seen on hardware:
+     * "active 11 ready 00000808 chain:" forever).
+     *
+     * Two port-specific facts combine to cause it. The idle task is a busy
+     * spin that never yields, so the ONLY thing that can hand the CPU to a
+     * ready task is this callback. And a wake whose context switch is deferred
+     * (ChangeThFromISR returning 0 because a cooperative switch was in flight)
+     * has ALREADY consumed the task's chain entry -- so on the next tick there
+     * is nothing left to wake, tasknr stays -1, and no transfer is attempted
+     * ever again.
+     *
+     * Re-drive the scheduler from the ready mask instead of only from the
+     * chain: if somebody is ready and outranks whoever holds the CPU, switch.
+     * On the console this was unreachable (the transfer never failed), so it
+     * changes no original behaviour. */
+    if ( tasknr < 0 )
+    {
+        int ready = mts_FindFirstReadyTask();
+        if ( ready > MTS_TASK_SYSTEM && ready < mts_active_task_800C0DB0 )
+        {
+            tasknr = ready;
+        }
+    }
+#endif
+
     // if a higher priority task was found, transfer execution to it
     if ( tasknr > MTS_TASK_SYSTEM && tasknr < mts_active_task_800C0DB0 )
     {
@@ -295,6 +423,29 @@ void mts_VSyncCallback( void )
         mts_SetActiveTaskAndTransferExecutionWithinInterrupt( mts_FindFirstReadyTask() );
     }
 }
+
+#ifdef __psyz
+/* Called from the port's vblank tick, which keeps running even when every mts
+ * task is stuck: dumps who is active, who is ready, and every entry still
+ * parked in the vblank wait chain with its deadline against the clock. */
+void mts_dbg_dump( void )
+{
+    MTS_ITASK *iter;
+    int n = 0;
+    printf( "[mts] time %d active %d ready %08x chain:", mts_time,
+            mts_active_task_800C0DB0, (unsigned)mts_ready_tasks_800C0DB4 );
+    for ( iter = mts_itask_chain.next; iter && n < 8; iter = iter->next, n++ )
+    {
+        printf( " t%d(target %d,state %d)", iter->tasknr, iter->target,
+                mts_tasks_800C0C30[ iter->tasknr ].state );
+    }
+    if ( iter )
+    {
+        printf( " ...LOOP?" );
+    }
+    printf( "\n" );
+}
+#endif
 
 void mts_init_vsync( void )
 {
@@ -311,8 +462,45 @@ int mts_wait_vbl( long count )
     unsigned int start, end;
     MTS_ITASK   *chain;
 
+#ifdef __psyz
+    /* poor man's profiler: a game task stuck in a poll loop calls this from
+     * the SAME return address hundreds of times in a row -- name the site */
+    {
+        static void* last_caller;
+        static unsigned same_count;
+        static int reported = 0;
+        void* caller = __builtin_return_address(0);
+        if (caller == last_caller) {
+            if (++same_count == 40u && reported > 0) {
+                reported--;
+                printf("[stall] task %d polling from %p" "\n",
+                       mts_active_task_800C0DB0, caller);
+                same_count = 0;
+            }
+        } else {
+            last_caller = caller;
+            same_count = 0;
+        }
+    }
+#endif
+
     intr = mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].intr;
     mts_assert( intr, 657, "waitvbl %d", mts_active_task_800C0DB0 );
+#ifdef __psyz
+    if ( !intr )
+    {
+        /* On the PSX a failed assertion still fell through and every task did
+         * have an interrupt table by then. Here a task can reach this without
+         * one, and the dereferences below would fault -- taking the board into
+         * a reboot loop. Register it now and carry on. */
+        mts_set_vsync_task();
+        intr = mts_tasks_800C0C30[ mts_active_task_800C0DB0 ].intr;
+        if ( !intr )
+        {
+            return 0;
+        }
+    }
+#endif
 
     start = mts_time;
     end = intr->last + count;
@@ -322,6 +510,18 @@ int mts_wait_vbl( long count )
     {
         intr->target = start + 1;
     }
+#ifdef __psyz
+    {
+        static int b = 0;
+        if ( b > 0 )
+        {
+            b--;
+            printf( "[wait] task %d count %d last %d now %d -> target %d" "\n",
+                    mts_active_task_800C0DB0, (int)count, (int)intr->last,
+                    (int)start, (int)intr->target );
+        }
+    }
+#endif
 
     {
         SwEnterCriticalSection();
@@ -391,9 +591,25 @@ static inline void mts_CreateTask( int tasknr, void *stackend, void *entrypoint 
     task->tid = OpenTh( (long (*)(void))&mts_task_start, (int)stackend, GetGp() );
 
     // OpenTh is buggy - does not initialize the SR register, so we have to do it ourselves
+#ifdef __psyz
+    printf( "[mts] task %d: OpenTh gave tid %d\n", tasknr, (int)task->tid );
+#endif
     task->tcb = mts_GetTcbEntry(task->tid);
     task->tcb->reg[ R_SR ] = SR_IBIT3; // SR = system status register, interrupt bit (2)
+#ifdef __psyz
+    /* The TCB write above is the classic corruptor here: if reg[R_SR] lands
+     * outside the entry, it stomps whatever follows -- and task->tid sits right
+     * next to task->tcb in this struct. Check it survived. */
+    if ( (int)task->tid < 0 )
+    {
+        printf( "[mts] task %d: tid CORRUPTED to %d by the TCB write "
+                "(R_SR=%d)\n", tasknr, (int)task->tid, R_SR );
+    }
+#endif
 
+#ifdef __psyz
+    printf("[mts] CreateTask %d -> tid %d\n", tasknr, (int)task->tid);
+#endif
     task->state = MTS_TASK_READY;
     mts_ready_tasks_800C0DB4 |= 1 << tasknr;
 
@@ -528,6 +744,25 @@ int mts_isend( int dst )
 
 int mts_receive( int src, unsigned char *message )
 {
+#ifdef __psyz
+    {
+        static void* last_caller;
+        static unsigned same_count;
+        static int reported = 0;
+        void* caller = __builtin_return_address(0);
+        if (caller == last_caller) {
+            if (++same_count == 40u && reported > 0) {
+                reported--;
+                printf("[stall] task %d receiving from %p src %d\n",
+                       mts_active_task_800C0DB0, caller, src);
+                same_count = 0;
+            }
+        } else {
+            last_caller = caller;
+            same_count = 0;
+        }
+    }
+#endif
     MTS_TASK *to;
     MTS_TASK *from;
     int       next;
@@ -1423,22 +1658,48 @@ void set_output_stream( int stream )
 }
 
 // int fprintf(int stream, const char *format, ...);
-int fprintf()
+int fprintf(int stream, const char *format, ...)
 {
-    /* dummy function */
+#ifdef __psyz
+    va_list ap;
+    int n;
+    (void)stream;
+    va_start(ap, format);
+    n = vprintf(format, ap);
+    va_end(ap);
+    return n;
+#else
+    (void)stream; (void)format;
+    return 0; /* dummy function */
+#endif
 }
 
 #ifndef DEV_EXE
 // int printf(const char *format, ...);
-int printf()
+int mts_printf(const char *format, ...)
 {
-    /* dummy function */
+#ifdef __psyz
+    /* On the PSX this was a no-op: output went to a dev-kit link. Off it, the
+     * game's entire boot narration ("mem:", "pad:", "gv:"...) vanished into
+     * here, which made a perfectly healthy boot look like a hang. Send it to
+     * the real console. */
+    va_list ap;
+    int n;
+    va_start(ap, format);
+    n = vprintf(format, ap);
+    va_end(ap);
+    return n;
+#else
+    (void)format;
+    return 0; /* dummy function */
+#endif
 }
 #endif
 
 // int cprintf(const char *format, ...);
-int cprintf()
+int cprintf(const char *format, ...)
 {
+    (void)format;
     /* dummy function */
 }
 

@@ -25,7 +25,7 @@ int info_alive = FALSE;
 static void Act(Work *work)
 {
     int       f24;
-    u_long   *ot;
+    OT_TYPE   *ot;
     POLY_FT4 *poly1;
     POLY_FT4 *poly2;
     int       w, h;

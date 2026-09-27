@@ -27,10 +27,10 @@
 
 //both below are defined in gvd.c
 extern char            *GM_StageName;
-char                   *GM_StageName;
+extern char                   *GM_StageName;
 
 extern GV_PAD                  *GM_CurrentPadData;
-GV_PAD        *SECTION(".sbss") GM_CurrentPadData;
+extern GV_PAD* GM_CurrentPadData; /* defined in libgv/gvd.c */
 
 int GM_GameStatus = 0;
 int GM_LoadRequest = 0;
@@ -131,6 +131,42 @@ static void GM_ClearWeaponAndItem(void)
 static void GM_InitGameSystem(void)
 {
     int i;
+
+#ifdef __psyz
+    /* Say which disc this is, because nothing else does.
+     *
+     * GM_OptionFlag is linkvarbuf[2] and starts at zero; on the console it is
+     * filled from the memory card, or by the player visiting the options
+     * screen. Boot straight into a stage with no save and it stays zero, which
+     * means "Japanese" -- and the layout of the data differs between releases.
+     *
+     * radiomes.c reads the codec fragment's size from a different byte of the
+     * same word depending on this flag: bits 16-23 for English, 24-31 for
+     * Japanese. On this USA disc byte 3 is zero, so the read was issued for
+     * ZERO BYTES, the buffer kept its fill pattern, and the parser found no
+     * faces -- which is the whole reason no Colonel conversation has ever been
+     * drawn. Measured: `LOADER ... sector 31392 size 0`.
+     *
+     * The English fragment is 0x800 bytes, exactly what the code's own comment
+     * upstream says it should be, so this is not a guess about the format.
+     * Setting it here rather than in radiomes.c looked right -- the flag is
+     * wrong for every reader, and movie.c, jimctrl.c and radio.c all branch on
+     * it. But it is OFF, because doing that globally had a side effect: the
+     * elevator stopped placing its codec call. Before the change the log showed
+     * `change camera 3` and `[codec] answered` on pressing the action button;
+     * after it, the trigger still fires and the doors still animate, and no
+     * call is placed. Nothing else about the game's behaviour changed in
+     * between, so this is the suspect.
+     *
+     * The flag genuinely IS needed for the codec fragment size (measured: the
+     * read was issued for 0 bytes without it, 8192 with it), so this is not a
+     * wrong finding -- it is a change whose blast radius is bigger than the
+     * problem it solves. Scope it to the one computation that was proven to
+     * need it, once the elevator is confirmed working again without it. */
+#if 0
+    GM_OptionFlag |= OPTION_ENGLISH;
+#endif
+#endif
 
     GM_PlayerAddress = -1;
     GM_GameStatus = 0;
@@ -473,6 +509,7 @@ static void Act(gameWork *work)
             {
                 if ((GM_LoadRequest & 0x80) != 0)
                 {
+                    { extern const char *mgs_dbg_undraw_src; mgs_dbg_undraw_src = "game/gamed.c:476"; }
                     DG_UnDrawFrameCount = 0x7fff0000;
                 }
 

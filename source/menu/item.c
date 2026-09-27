@@ -320,7 +320,7 @@ int menu_item_IsItemDisabled_8003B6D0(int item)
     return (GM_DisableItem & bit) != 0;
 }
 
-void menu_drawPalKey_8003B794(MenuWork *work, u_long *ot, int id)
+void menu_drawPalKey_8003B794(MenuWork *work, OT_TYPE *ot, int id)
 {
     RECT      pal_rect;
     RECT      img_rect;
@@ -370,7 +370,7 @@ void menu_drawPalKey_8003B794(MenuWork *work, u_long *ot, int id)
  * @param ypos The y-coordinate where the item should be drawn.
  * @param pMenuSub Pointer to the current item in the inventory.
  */
-void menu_item_helper_8003B8F0(MenuWork *work, u_long *ot, int xpos, int ypos, Menu_Inventory *pMenuSub)
+void menu_item_helper_8003B8F0(MenuWork *work, OT_TYPE *ot, int xpos, int ypos, Menu_Inventory *pMenuSub)
 {
     PANEL_TEXTURE *pMenuSprt;       // $s6
     SPRT          *pIconSprt;       // $s0
@@ -617,7 +617,7 @@ int menu_item_update_helper_8003BCD4(MenuWork *work)
     return 1;
 }
 
-void menu_item_update_helper2_8003BF1C(MenuWork *work, u_long *ot)
+void menu_item_update_helper2_8003BF1C(MenuWork *work, OT_TYPE *ot)
 {
     unsigned short     anim_frame;
     int                anim_frame2;
@@ -1096,7 +1096,7 @@ void UpdateEnvironmentalEffects_8003C4EC(void)
     }
 }
 
-void menu_item_update_8003C95C(MenuWork *work, u_long *ot)
+void menu_item_update_8003C95C(MenuWork *work, OT_TYPE *ot)
 {
     GV_PAD         *pPad = work->field_24_pInput;
     Menu_Inventory *pLeftRight;

@@ -10,9 +10,19 @@
 
 void FS_StartDaemon( void )
 {
+#ifdef __psyz
+    printf( "[fsd] SetMem\n" );
+    SetMem(2);
+    printf( "[fsd] FS_CDInit\n" );
+    FS_CDInit();
+    printf( "[fsd] sio_output_stop\n" );
+    sio_output_stop();
+    printf( "[fsd] done\n" );
+#else
     SetMem(2);          // Set effective memory to 2MB (DTL-H2X00 has 8MB)
     FS_CDInit();        // Init CD read system
     sio_output_stop();
+#endif
 }
 
 void FS_CdStageProgBinFix( void )

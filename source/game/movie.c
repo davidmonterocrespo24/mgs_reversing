@@ -370,6 +370,7 @@ static void Die(Work *work)
 
     MENU_JimakuClear();
 
+    { extern const char *mgs_dbg_undraw_src; mgs_dbg_undraw_src = "game/movie.c:373"; }
     DG_UnDrawFrameCount = 0x7fff0000;
     GM_GameStatus &= ~STATE_DEMO;
 
@@ -395,6 +396,28 @@ void *NewMovie(unsigned int code)
 
     GV_ZeroMemory(&movie_work, sizeof(Work));
     printf("MOVIE %d\n", code);
+
+#ifdef __psyz
+    /* No full-motion video on this board.
+     *
+     * The PSX decodes FMV in hardware through the MDEC, and psyz's DecDCTin /
+     * DecDCTout / DecDCTvlc are all NOT_IMPLEMENTED stubs. Without them the
+     * player starts, decodes nothing, and its Die parks DG_UnDrawFrameCount at
+     * 0x7fff0000 -- "the movie owns the screen" -- which nothing then resets:
+     * the game keeps running, transforms its models, and draws not one
+     * primitive. That is a black screen with a perfectly healthy frame loop,
+     * and it is exactly what appeared the moment ZMOVIE.STR was copied to the
+     * card and the movie index came alive.
+     *
+     * Decline the same way a missing movie file declines. That path is part of
+     * the original game, every caller already handles the NULL, and it is the
+     * behaviour the board had before the file existed. Reinstate this once an
+     * MDEC decoder exists -- though at 320x240 on this CPU, FMV is unlikely to
+     * be worth the frame budget. */
+    printf("[movie] no MDEC decoder on this board -- skipping movie %d\n",
+           code);
+    return NULL;
+#endif
 
     file = FS_GetMovieInfo(code);
     if (file == NULL)

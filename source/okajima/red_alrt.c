@@ -107,7 +107,7 @@ void RedAlertAct_800C45E4(Work *work)
 {
     u_short hashes[5];
     int     found;
-    u_long *ot;
+    OT_TYPE *ot;
 
     GM_CurrentMap = work->map;
 

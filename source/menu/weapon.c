@@ -9,6 +9,10 @@
 #include "libgcl/libgcl.h"
 #include "game/game.h"
 #include "linkvar.h"
+
+#ifdef __psyz
+#define A_NL "\n"
+#endif
 #include "menu/radio.h"
 #include "sound/g_sound.h"
 
@@ -622,7 +626,7 @@ void menu_navigation_8003D6CC(Menu_Inventory *pLeftRight, GV_PAD *pPad)
     }
 }
 
-void menu_8003D7DC(MenuWork *work, u_long *ot, Menu_Inventory *pSubMenu)
+void menu_8003D7DC(MenuWork *work, OT_TYPE *ot, Menu_Inventory *pSubMenu)
 {
     int                field_8, pos, field_C;
     PANEL_CONF        *pPanelConf;
@@ -705,7 +709,7 @@ void menu_8003D7DC(MenuWork *work, u_long *ot, Menu_Inventory *pSubMenu)
     sub_8003CE84();
 }
 
-void menu_sub_menu_update_8003DA0C(MenuWork *work, u_long *ot, Menu_Inventory *pSubMenu)
+void menu_sub_menu_update_8003DA0C(MenuWork *work, OT_TYPE *ot, Menu_Inventory *pSubMenu)
 {
     if ((GM_GameStatus & (STATE_VOX_STREAM | GAME_FLAG_BIT_13)) != STATE_VOX_STREAM)
     {
@@ -715,7 +719,7 @@ void menu_sub_menu_update_8003DA0C(MenuWork *work, u_long *ot, Menu_Inventory *p
     }
 }
 
-void sub_8003DA60(MenuWork *work, u_long *ot, Menu_Inventory *pLeftRight, int off1, int off2)
+void sub_8003DA60(MenuWork *work, OT_TYPE *ot, Menu_Inventory *pLeftRight, int off1, int off2)
 {
     pLeftRight->field_8_panel_conf->field_18_pFnUpdate(
         work, ot, pLeftRight->field_8_panel_conf->field_0_xOffset + off1,
@@ -823,6 +827,15 @@ RPK_ITEM **menu_rpk_init_8003DD1C(const char *pFileName)
 
     // At the start of the game, "item.rpk" file is loaded (5d43.r)
     rpk = GV_GetCache(GV_CacheID2(pFileName, 'r'));
+#ifdef __psyz
+    printf("[rpk] '%s' cache -> %p", pFileName, (void *)rpk);
+    if (rpk)
+    {
+        printf(" pal %d img %d items %p", rpk->palettes, rpk->images,
+               (void *)rpk->items);
+    }
+    printf(A_NL);
+#endif
     if (!rpk)
     {
         return NULL;
@@ -861,6 +874,11 @@ void menu_init_rpk_item_8003DDCC(PANEL_TEXTURE *pPanelTex, int imgIdx, int palId
 
     pPal = menu_rpk_get_pal_8003DD9C(palIdx);
     pImg = menu_rpk_get_img_8003DDB4(imgIdx);
+#ifdef __psyz
+    printf("[rpk] item img[%d]=%p pal[%d]=%p table %p", imgIdx, (void *)pImg,
+           palIdx, (void *)pPal, (void *)gItemFile_table_800ABAE4);
+    printf(A_NL);
+#endif
     pPanelTex->field_9_xofs = pImg->x - 2;
     pPanelTex->field_A_yofs = pImg->y - 2;
     pPanelTex->field_10_w = pImg->w * 4;
@@ -1071,7 +1089,7 @@ void menu_weapon_printDescription_8003E030(int wpn_id)
     menu_printDescription_8003F97C(weaponDescription);
 }
 
-void menu_weapon_init_helper_8003E0E8(MenuWork *work, u_long *ot, int off_x, int off_y, PANEL *pPanel)
+void menu_weapon_init_helper_8003E0E8(MenuWork *work, OT_TYPE *ot, int off_x, int off_y, PANEL *pPanel)
 {
     PANEL_TEXTURE        *pTexture;
     const char           *str;
@@ -1281,7 +1299,7 @@ int menu_weapon_update_helper_8003E4B8(MenuWork *work)
     return 1;
 }
 
-void menu_weapon_update_helper2_8003E674(MenuWork *work, u_long *ot)
+void menu_weapon_update_helper2_8003E674(MenuWork *work, OT_TYPE *ot)
 {
     unsigned short     anim_frame;
     int                anim_frame2;
@@ -1406,7 +1424,7 @@ void menu_weapon_update_helper2_8003E674(MenuWork *work, u_long *ot)
     }
 }
 
-void menu_weapon_update_8003E990(MenuWork *work, u_long *ot)
+void menu_weapon_update_8003E990(MenuWork *work, OT_TYPE *ot)
 {
     GV_PAD         *pPad;
     Menu_Inventory *pMenu;

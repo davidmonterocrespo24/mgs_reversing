@@ -178,7 +178,7 @@ static void demosel_800C373C(Work *work, int index)
     }
 }
 
-static void demosel_800C3880(Work *work, u_long *ot)
+static void demosel_800C3880(Work *work, OT_TYPE *ot)
 {
     int       found;
     int       index;

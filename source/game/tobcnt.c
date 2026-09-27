@@ -212,7 +212,7 @@ static short tobcnt_logo_data[] = {
 
 /*---------------------------------------------------------------------------*/
 
-static char *SetOptionPrim( char *buf, int x, int y, int name, unsigned int color, u_long *ot )
+static char *SetOptionPrim( char *buf, int x, int y, int name, unsigned int color, OT_TYPE *ot )
 {
     DG_TEX   *tex;
     SPRT     *sprt;
@@ -257,7 +257,7 @@ static int GetLineColor( int shade, int step )
 
 /*---------------------------------------------------------------------------*/
 
-static void DrawAnimation( Work *work, u_long *ot )
+static void DrawAnimation( Work *work, OT_TYPE *ot )
 {
     int       x0, y0;
     int       x1, y1;
@@ -442,7 +442,7 @@ static void DrawAnimation( Work *work, u_long *ot )
     }
 }
 
-static void DrawBackgroundFade(Work *work, u_long *ot, int shade)
+static void DrawBackgroundFade(Work *work, OT_TYPE *ot, int shade)
 {
     TILE     *tile;
     DR_TPAGE *tpage;
@@ -464,7 +464,7 @@ static void DrawBackgroundFade(Work *work, u_long *ot, int shade)
 
 static void Act( Work *work )
 {
-    u_long *ot;
+    OT_TYPE *ot;
     GV_PAD *pad;
     int     shade;
 

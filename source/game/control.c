@@ -262,6 +262,31 @@ retry:
     }
     else
     {
+#ifdef __psyz
+        {
+            /* This vector is added straight to the character's position: it is
+             * how walls push you out of themselves. A wrong one does not make
+             * the collision "soft", it TELEPORTS -- which is what "it jumps
+             * all over the place" looks like from the player's side. The push should
+             * never exceed the collision radius by much, so anything larger
+             * means the wall normals coming out of libhzd are garbage rather
+             * than the reaction being merely strong. */
+            static int budget = 24;
+            int px = vec.vx < 0 ? -vec.vx : vec.vx;
+            int pz = vec.vz < 0 ? -vec.vz : vec.vz;
+            /* Measured on the board: a correct push lands within a couple of
+             * units of r_sphere, because that is the distance the character is
+             * being placed at from the wall. Only flag something well past it,
+             * which would mean a bad normal rather than a strong reaction. */
+            if (budget > 0 && (px > ctrl->r_sphere * 2 || pz > ctrl->r_sphere * 2))
+            {
+                budget--;
+                printf("[near] %d seg push %d,%d (r_sphere %d) at %d,%d\n", i,
+                       vec.vx, vec.vz, ctrl->r_sphere, ctrl->mov.vx,
+                       ctrl->mov.vz);
+            }
+        }
+#endif
         ctrl->mov.vx += vec.vx;
         ctrl->mov.vz += vec.vz;
     }
@@ -356,6 +381,40 @@ void GM_ActControl(CONTROL *ctrl)
         }
 
         CheckCollide(ctrl, hzd);
+
+#ifdef __psyz
+        {
+            /* Trace ONE character's path, frame by frame.
+             *
+             * "The world moves fine but the player does not" cannot be the
+             * frame rate -- that would blur both equally. It has to be
+             * something in how this position advances. So print the step the
+             * character asked for and the position before and after collision
+             * resolves it: a straight walk should show a near-constant step
+             * and a monotonic path, and any weaving, reversal or jump shows up
+             * as a sign change in a column.
+             *
+             * Locked to the first control that ever runs so the lines all
+             * belong to the same actor -- Snake is the first the game creates.
+             */
+            static CONTROL *traced;
+            static int budget = 240;
+            if (!traced)
+            {
+                traced = ctrl;
+            }
+            /* only while actually walking: standing still burns the budget on
+             * identical lines before anyone is watching */
+            if (ctrl == traced && budget > 0 &&
+                (ctrl->step.vx != 0 || ctrl->step.vz != 0))
+            {
+                budget--;
+                printf("[path] pos %d,%d,%d step %d,%d rot %d turn %d\n",
+                       ctrl->mov.vx, ctrl->mov.vy, ctrl->mov.vz, ctrl->step.vx,
+                       ctrl->step.vz, ctrl->rot.vy, ctrl->turn.vy);
+            }
+        }
+#endif
 
         ctrl->mov.vx += ctrl->step.vx;
         ctrl->mov.vz += ctrl->step.vz;

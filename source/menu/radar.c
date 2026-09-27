@@ -117,7 +117,7 @@ void MENU_SetRadarFunc(TRadarFn_800AB48C func)
     gFn_radar_800AB48C = func;
 }
 
-void draw_radar_vision_cone_80038F3C(MenuWork *work, u_long *ot, RADAR_SIGHT_PARAM *r_param, int x, int y, int color,
+void draw_radar_vision_cone_80038F3C(MenuWork *work, OT_TYPE *ot, RADAR_SIGHT_PARAM *r_param, int x, int y, int color,
                                      int fadeColor, int scale)
 {
     SVECTOR  right;
@@ -159,7 +159,7 @@ void draw_radar_vision_cone_80038F3C(MenuWork *work, u_long *ot, RADAR_SIGHT_PAR
 }
 
 // Draws the black border around the radar.
-void drawBorder_800390FC(MenuWork *menuMan, u_long *ot)
+void drawBorder_800390FC(MenuWork *menuMan, OT_TYPE *ot)
 {
     int x1, y1, x2, y2;
 
@@ -175,6 +175,7 @@ void drawBorder_800390FC(MenuWork *menuMan, u_long *ot)
 
 // clang-format off
 // gte_stbv but with sh instead of sb
+#ifndef __psyz
 #define gte_stbh( r0 ) __asm__ volatile (                       \
         "mfc2   $12, $9;"                                       \
         "mfc2   $13, $10;"                                      \
@@ -183,19 +184,24 @@ void drawBorder_800390FC(MenuWork *menuMan, u_long *ot)
         :                                                       \
         : "r"( r0 )                                             \
         : "$12", "$13", "memory" )
+#endif /* __psyz: psyz provides a portable form */
+
 
 // gte_ldv0 but without the second load
+#ifndef __psyz
 #define gte_ldv0h( r0 ) __asm__ volatile (                      \
         "lwc2   $0, 0( %0 )"                                    \
         :                                                       \
         : "r"( r0 ) )
+#endif /* __psyz: psyz provides a portable form */
+
 // clang-format on
 
 extern CONTROL         *GM_WhereList[96];
 extern int              GM_N_WhereList;
 
 // Couldn't test it, but it should be the appropriate function name.
-void drawMap_800391D0(MenuWork *work, u_long *ot, int arg2)
+void drawMap_800391D0(MenuWork *work, OT_TYPE *ot, int arg2)
 {
     RADAR_SIGHT_PARAM cone;
 
@@ -399,9 +405,22 @@ void drawMap_800391D0(MenuWork *work, u_long *ot, int arg2)
         addPrim(ot, pTpage);
     }
 
+#ifdef __psyz
+    /* This bare word is the chain anchor the wall lines below insert behind.
+     * With the 8-byte tag+len header a 4-byte allocation makes the anchor's
+     * len field OVERLAP the next prim's tag: the first wall line written
+     * there turned the anchor's length into a pointer value and the walker
+     * dropped the whole radar chain. Allocate a real two-word header. */
+    prim = (u_long *)work->prim->next;
+    work->prim->next += 8;
+    setaddr(prim, 0);
+    setlen(prim, 0);
+    addPrim(ot, prim);
+#else
     NEW_PRIM(prim, work);
     *prim = 0;
     addPrim(ot, prim);
+#endif
 
     pvec = getScratchAddr2(DG_PVECTOR, 0);
     svec = getScratchAddr2(SVECTOR, 0);
@@ -521,7 +540,7 @@ void drawMap_800391D0(MenuWork *work, u_long *ot, int arg2)
                     }
                 }
 
-                gte_ldv0h(0x1F800020);
+                gte_ldv0h((SCRPAD_ADDR + 0x020));
                 gte_rt();
 
                 if (((((int *)scratchShort)[0x18 / 4] < pWall->p1.y) ||
@@ -548,12 +567,21 @@ void drawMap_800391D0(MenuWork *work, u_long *ot, int arg2)
 
                 gte_stbh(&pLine->x0);
 
-                gte_ldv0h(0x1F800024);
+                gte_ldv0h((SCRPAD_ADDR + 0x024));
                 gte_rt();
 
                 LSTORE(rgb, &pLine->r0);
+#ifdef __psyz
+                /* the packed idiom split into the two-word header: length in
+                 * its own field, the link a full pointer (the 24-bit mask is
+                 * what sent the walker to 0x00cacb24) */
+                setaddr(pLine, *ot2);
+                setlen(pLine, 3);
+                *ot2 = (u_long)pLine;
+#else
                 pLine->tag = *ot2 | 0x03000000;
                 *ot2 = (int)(pLine)&0xffffff;
+#endif
                 gte_stbh(&pLine->x1);
 
                 pLine++;
@@ -668,7 +696,7 @@ void drawHeader_80039EC4(MenuPrim *pGlue, int y, int idx)
     if (time < 8)
     {
         time2 = time * 512;
-        gte_ldfcdir(0, 0, 0);
+        gte_ldfcdir3(0, 0, 0);
         gte_lddp(time2);
         gte_ldrgb(rgbs);
         gte_dpcs();
@@ -921,7 +949,7 @@ void drawSymbols_8003A978(MenuPrim *prim, int x, int code)
 }
 
 // Slightly misleading name as it also handles the radar in normal mode.
-void drawAlertEvasionJammingPanel_8003AA2C(MenuWork *work, u_long *ot, int radarMode, int alertLevel)
+void drawAlertEvasionJammingPanel_8003AA2C(MenuWork *work, OT_TYPE *ot, int radarMode, int alertLevel)
 {
     unsigned int randValue;
     DR_TPAGE    *tpage1;
@@ -1038,7 +1066,7 @@ void menu_radar_helper_8003ADD8(MenuWork *work, int index)
     SetDrawEnv(&work->field_CC_radar_data.dr_env[index], &drawEnv);
 }
 
-void draw_radar(MenuWork *work, u_long *ot)
+void draw_radar(MenuWork *work, OT_TYPE *ot)
 {
     int       alertLevel, alertMode;
     DR_AREA  *twin, *twin2, *twin3;
@@ -1179,8 +1207,12 @@ void draw_radar(MenuWork *work, u_long *ot)
     addPrim(ot, &work->field_CC_radar_data.dr_env[GV_Clock]);
 }
 
-void menu_radar_update_8003B350(MenuWork *work, u_long *ot)
+void menu_radar_update_8003B350(MenuWork *work, OT_TYPE *ot)
 {
+    /* Also used to return here under __psyz, for the same reason menuman.c
+     * did, and it is stale for the same reason: the hand-packed tag idioms it
+     * warns about are all in the #else arm. The radar is what tells the player
+     * where they are, so its absence is not the small loss the note claimed. */
     int clipY;
 
     if (work->field_CC_radar_data.display_flag)

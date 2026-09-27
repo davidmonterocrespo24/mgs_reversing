@@ -11,7 +11,7 @@
 #include "linkvar.h"
 
 extern GV_PAD           *GM_CurrentPadData;
-GV_PAD *SECTION(".sbss") GM_CurrentPadData;
+extern GV_PAD *GM_CurrentPadData;
 
 int GM_GameOverVox = -1;
 
@@ -174,7 +174,7 @@ STATIC short over_logo_data[] = {
 
 /*---------------------------------------------------------------------------*/
 
-static char *SetOptionPrim( char *buffer, short x, short y, int texture_id, unsigned int color, u_long *ot )
+static char *SetOptionPrim( char *buffer, short x, short y, int texture_id, unsigned int color, OT_TYPE *ot )
 {
     DG_TEX   *tex;
     SPRT     *sprt;
@@ -219,7 +219,7 @@ static int GetLineColor( int shade, int step )
 
 /*---------------------------------------------------------------------------*/
 
-static void DrawAnimation(Work *work, u_long *ot)
+static void DrawAnimation(Work *work, OT_TYPE *ot)
 {
     int       x0, y0;
     int       x1, y1;
@@ -409,7 +409,7 @@ static void DrawAnimation(Work *work, u_long *ot)
     }
 }
 
-static void DrawBackgroundFade(Work *work, u_long *ot, int shade)
+static void DrawBackgroundFade(Work *work, OT_TYPE *ot, int shade)
 {
     TILE     *tile;
     DR_TPAGE *tpage;
@@ -436,7 +436,7 @@ static void DrawBackgroundFade(Work *work, u_long *ot, int shade)
 
 static void Act( Work *work )
 {
-    u_long *ot;
+    OT_TYPE *ot;
     GV_PAD *pad;
     u_short press;
     int     shade;

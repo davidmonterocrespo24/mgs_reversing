@@ -175,7 +175,30 @@ int   GV_LoadInit( void *data, int name, int cache_mode );
 #define PACK_SIZE       (188 * 1024) /* 188KiB */
 #define MEM_SIZE        (428 * 1024) /* 428KiB */
 
+/* The game's entire main-RAM map is derived by subtraction from this one
+ * address, so relocating it moves everything: the two packet arenas, the 428 KB
+ * general heap, and the load buffer libfs reads sectors into. On the console
+ * 0x801E0000 was the top of the 2 MB the game was allowed; here it has to be
+ * memory we actually own, or the first fread() into MEM_ADDR stores to
+ * 0x80117000 and faults. See port/psyz_port.c for the reservation. */
+#ifdef __psyz
+#define MGS_MAIN_RAM_SIZE 0xC9000   /* MEM_SIZE + PACK_SIZE * 2 */
+/* The game also uses the 128 KB ABOVE MEM_BOTTOM (0x801E0000..0x80200000 on
+ * the console): sng_data at +0, the CD stream buffer at +0x7800 and its
+ * header at +0x1F800. The reservation covers it so those pointers stay
+ * inside owned memory. */
+#define MGS_TOP_RAM_SIZE  0x20000
+/* The resident heap grows DOWN from MEM_ADDR (see libgv/resident.c). On the
+ * console it descended into the space between the executable's bss and the
+ * heaps; here it needs its own headroom below MEM_ADDR or every resident
+ * allocation lands BEFORE the reservation, silently trampling the PSRAM
+ * heap (the virtual CD's disc data lives there). */
+#define MGS_RESIDENT_HEADROOM 0x80000
+extern unsigned char mgs_main_ram[];
+#define MEM_BOTTOM      ((void *)(mgs_main_ram + MGS_RESIDENT_HEADROOM + MGS_MAIN_RAM_SIZE))
+#else
 #define MEM_BOTTOM      ((void *)0x801E0000)
+#endif
 
 #define PACK_ADDR0      (MEM_BOTTOM - PACK_SIZE * 2)
 #define PACK_ADDR1      (MEM_BOTTOM - PACK_SIZE)

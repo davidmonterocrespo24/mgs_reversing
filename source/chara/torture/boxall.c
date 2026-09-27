@@ -48,7 +48,7 @@ static void DrawItemText(Work *work)
     SVECTOR  pos;
     SVECTOR *mov;
     int      dx, dz;
-    u_long  *ot;
+    OT_TYPE  *ot;
     LINE_F4 *text_line;
     int      x, y;
 

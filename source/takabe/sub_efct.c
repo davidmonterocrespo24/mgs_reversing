@@ -22,7 +22,10 @@ typedef struct _Work
 
 #define EXEC_LEVEL GV_ACTOR_DAEMON
 
+#ifndef __psyz
 #define gte_pop_color(r0) __asm__ volatile ("mfc2   %0, $9;" : "=r"(r0))
+#endif /* __psyz: psyz provides a portable form */
+
 
 void SubEfct_800CC798(DG_MDL *model)
 {

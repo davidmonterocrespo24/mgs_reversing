@@ -192,7 +192,23 @@ void reset_stdout_stream( void );
 void set_output_stream( int stream );
 
 #ifndef __IN_MTS_NEW__
-int fprintf( int stream, const char *format, ... );
+#ifdef __psyz
+#include <stdio.h>  /* must be seen BEFORE the redirect below, or the
+                     * macro renames stdio's own declaration too */
+#endif
+int mts_fprintf( int stream, const char *format, ... );
+int mts_printf( const char *format, ... );
+#ifdef __psyz
+#undef printf
+#endif
+#undef fprintf
+#define fprintf mts_fprintf
+#ifdef __psyz
+/* MGS supplies its own no-op printf on the PSX; off it, keep the game's
+ * calls going to the game's version instead of shadowing the libc one */
+#undef printf
+#define printf mts_printf
+#endif
 int cprintf( const char *format, ... );
 #endif
 

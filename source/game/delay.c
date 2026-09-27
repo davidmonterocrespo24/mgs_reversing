@@ -116,7 +116,7 @@ static void Act(Work *work)
         return;
     }
 
-    if (work->gcl_exec.proc_id < 0)
+    if (GCL_IS_BLOCK_PTR(work->gcl_exec.proc_id))
     {
         GCL_ExecBlock(work->gcl_exec.block_top, &work->args);
     }

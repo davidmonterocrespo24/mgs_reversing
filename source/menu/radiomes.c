@@ -427,7 +427,44 @@ void menu_radio_codec_task_proc_80047AA0()
     if (dword_800ABB38->field_20_pFacesGroup == NULL)
     {
         printf("NO MEMORY FOR FACE %d\n", pFacesGroupSize);
+#ifdef __psyz
+        /* and then it carried on regardless: read the file over a null pointer
+         * and hand that null to the parser, whose very first line is
+         * pFacesGroup->field_0_face_count. That is the crash at
+         * radioanim.c:145, and the reason the codec screen was switched off
+         * and no Colonel conversation was ever seen. On the PSX the allocation
+         * does not fail so the path is never taken; here the group asks for
+         * 417792 bytes and GV_PACKET_MEMORY0 has nothing like it.
+         *
+         * Fall back to the reserve in PSRAM rather than give up: it is sized
+         * for this and cannot fail. If even that is too small, leave without a
+         * face group -- state unwound the way the success path leaves it, so
+         * the call is mute rather than fatal. */
+        {
+            extern unsigned char  mgs_face_group[];
+            extern const unsigned mgs_face_group_size;
+
+            if ((unsigned)pFacesGroupSize <= mgs_face_group_size)
+            {
+                dword_800ABB38->field_20_pFacesGroup = mgs_face_group;
+                printf("[face] pool refused %d, using the PSRAM reserve\n",
+                       pFacesGroupSize);
+            }
+            else
+            {
+                printf("[face] %d exceeds the %u reserve -- call goes mute\n",
+                       pFacesGroupSize, mgs_face_group_size);
+                dword_800ABB38->field_14_bInExecBlock = 0;
+                dword_800ABB38->field_18 = field_18 & ~0x1;
+                return;
+            }
+        }
+#endif
     }
+#ifdef __psyz
+    printf("[face] group %d bytes at %p, sector %d\n", pFacesGroupSize,
+           (void *)dword_800ABB38->field_20_pFacesGroup, startSector);
+#endif
 
     // pFacesGroup is parsed in menu_radio_codec_task_proc_helper_80046F3C
     pFacesGroup = dword_800ABB38->field_20_pFacesGroup;
@@ -562,6 +599,30 @@ void sub_80047D70(MenuWork *work, int param_2, int pRadioCode)
 
     // radioDatFragment is parsed in menu_radio_codec_task_proc_80047AA0()
     FS_LoadFileRequest(1, startSector, size, radioDatFragment);
+#ifdef __psyz
+    /* and wait for it, the way the face-group load a few lines up already
+     * does. Nothing else does: the parser guards on FS_StreamTaskState(),
+     * which watches the STREAMING task, not this file read -- a different
+     * mechanism entirely. On the console the codec has frames of slack before
+     * it looks at the buffer and the read has long finished, so the missing
+     * wait is invisible. Here the buffer is parsed while it still holds its
+     * fill pattern: sectorAndSize came back 0xCCEEEEAE, which asks FACE.DAT
+     * for sector 15658670 of a file that has about 1700, and the parser then
+     * finds zero faces. That is why no Colonel conversation has ever been
+     * drawn. */
+    while (FS_LoadFileSync() > 0)
+    {
+        mts_wait_vbl(1);
+    }
+    /* Show the RAW code everything is derived from. The sector it produces is
+     * 31392 and RADIO.DAT is 867 sectors on this disc -- verified against the
+     * image itself, the file is not truncated. So no split of that word into
+     * sector and size can be right: the input is wrong, not the arithmetic.
+     * Print it and stop guessing at bit layouts. */
+    printf("[face] LOADER code %08X -> sector %d size %d | frag %p first %08lX\n",
+           (unsigned)pRadioCode, startSector, size, radioDatFragment,
+           radioDatFragment ? *(unsigned long *)radioDatFragment : 0ul);
+#endif
 
     pCharaStruct->field_24_pImgData256 = GV_AllocMemory(GV_PACKET_MEMORY0, 0x200);
     if (pCharaStruct->field_24_pImgData256 == NULL)
@@ -667,7 +728,22 @@ void menu_radio_codec_helper_helper7_80048080()
     menu_radio_codec_helper_helper7_helper_80046A98(dword_800ABB38);
     GV_FreeMemory(GV_PACKET_MEMORY0, dword_800ABB38->field_24_pImgData256);
     GV_FreeMemory(GV_PACKET_MEMORY0, dword_800ABB38->stack);
+#ifdef __psyz
+    /* The face group may be the PSRAM reserve rather than a pool block -- see
+     * the fallback where it is allocated. Handing a static array to the pool's
+     * free list corrupts it silently, and the damage would surface somewhere
+     * else entirely, long afterwards. */
+    {
+        extern unsigned char mgs_face_group[];
+        if (dword_800ABB38->field_20_pFacesGroup != mgs_face_group)
+        {
+            GV_FreeMemory(GV_PACKET_MEMORY0,
+                          dword_800ABB38->field_20_pFacesGroup);
+        }
+    }
+#else
     GV_FreeMemory(GV_PACKET_MEMORY0, dword_800ABB38->field_20_pFacesGroup);
+#endif
     GV_FreeMemory(GV_PACKET_MEMORY0, dword_800ABB38->field_1C_radioDatFragment);
     dword_800ABB38->field_1C_radioDatFragment = NULL;
 }

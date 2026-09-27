@@ -3,6 +3,16 @@
 #include <sys/types.h>
 #include <libcd.h>
 
+/* __psyz_cd_rename: off-console there is no drive to read. port/virtual_cd.c
+ * supplies these over ordinary files; the disc versions keep compiling so the
+ * real ISO9660 layout stays documented, but nothing links against them. */
+#ifdef __psyz
+#define CDBIOS_Reset CDBIOS_Reset_disc
+#define CDBIOS_ReadRequest CDBIOS_ReadRequest_disc
+#define CDBIOS_ReadSync CDBIOS_ReadSync_disc
+#endif
+
+
 #include "common.h"
 #include "mts/mts.h"
 #include "mts/taskid.h"

@@ -91,6 +91,11 @@ void keych(void);
 int vib_generate(int cnt);
 void bendch(void);
 void note_cntl(void);
+#ifdef __psyz
+/* the sound driver's own PRNG; newlib already has a random() with a
+ * different return type, so give this one its own name */
+#define random sd_random
+#endif
 unsigned int random(void);
 void tempo_ch(void);
 void volxset(unsigned char depth);

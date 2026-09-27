@@ -292,7 +292,7 @@ void d11c_800C5094(Work *work, int arg1)
 {
     MATRIX   sp10;
     SVECTOR  sp30;
-    u_long  *ot;
+    OT_TYPE  *ot;
     POLY_G4 *poly;
     int      factor;
     int      angle;

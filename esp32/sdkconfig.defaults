@@ -1,0 +1,56 @@
+# SOTN ESP32-S3 — Waveshare ESP32-S3-Touch-LCD-2 (S3R8: 8MB octal PSRAM, 16MB flash)
+# Derived from the proven OpenLara port configuration.
+CONFIG_IDF_TARGET="esp32s3"
+
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=240
+
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_120M=y
+
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_120M=y
+CONFIG_SPIRAM_TYPE_AUTO=y
+CONFIG_SPIRAM_USE_CAPS_ALLOC=y
+# MGS statics: 1 MB of VRAM plus ~2.4 MB of game .bss go to PSRAM
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+# malloc() falls back to PSRAM for big allocations (asset loads)
+CONFIG_SPIRAM_USE_MALLOC=y
+# game task stack lives in PSRAM (it never disables flash cache)
+CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=65536
+
+# cache config: NOT defaults; required-safe with octal PSRAM (64B wrap bursts)
+CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y
+CONFIG_ESP32S3_INSTRUCTION_CACHE_8WAYS=y
+CONFIG_ESP32S3_DATA_CACHE_64KB=y
+CONFIG_ESP32S3_DATA_CACHE_8WAYS=y
+CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+# engine uses C++ with no exceptions
+CONFIG_COMPILER_CXX_EXCEPTIONS=n
+
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_TASK_WDT_INIT=n
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+
+# 120 MHz octal PSRAM + 120 MHz flash, the same grade the SOTN port ships on
+# this board. The rasterizer is bandwidth-bound on PSRAM (every texel read and
+# every pixel write goes there), so this is the widest lever available.
+#
+# EXPERIMENTAL_FEATURES is not optional and not cosmetic: without it the 120M
+# choices are not even visible to Kconfig, the speed silently falls back, and
+# the build then dies on "FLASH and PSRAM Mode configuration are not supported"
+# -- an error that reads like a hardware limit and is not one.
+CONFIG_IDF_EXPERIMENTAL_FEATURES=y

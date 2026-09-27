@@ -730,6 +730,10 @@ void *NewElevator(int name, int where, int argc, char **argv)
 {
     Work *work;
 
+#ifdef __psyz
+    printf("[lift] car spawned\n");
+#endif
+
     work = GV_NewActor(EXEC_LEVEL, sizeof(Work));
     if (work != NULL)
     {

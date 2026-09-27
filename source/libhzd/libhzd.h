@@ -148,6 +148,30 @@ int HZD_LevelHazardCheck( HZD_HDL *hzd, SVECTOR *from, int chk_flag );
 void HZD_GetLevelHazard( HZD_FLR **flr );
 void HZD_GetLevelHeight( int *lvl_ptr );
 int HZD_SlopeFloorLevel( SVECTOR *mov, HZD_FLR *flr );
+
+/* Integer division that cannot take the board down.
+ *
+ * This library divides by quantities derived from geometry -- squared segment
+ * lengths, coordinate differences, interpolation denominators -- and every one
+ * of them reaches zero for a degenerate case: a point exactly on an endpoint,
+ * two identical heights, a segment with no extent in the XZ plane. On the
+ * R3000 that was survivable: MIPS leaves a divide-by-zero result undefined and
+ * keeps running, so the frame produced a meaningless normal and the next one
+ * was fine. Xtensa raises IntegerDivideByZero, and the panic reboots the whole
+ * board -- which is what happened while walking Snake around the dock, inside
+ * HZD_NearHazardCheck.
+ *
+ * Returning zero keeps the console's "garbage but alive" behaviour without the
+ * garbage being unbounded. Only needed for divisors computed at runtime;
+ * constants like /2 or /256 are fine as they are. */
+#ifdef __psyz
+static inline int HZD_DIV( int num, int den )
+{
+    return den ? num / den : 0;
+}
+#else
+#define HZD_DIV( num, den ) ( ( num ) / ( den ) )
+#endif
 int HZD_GetFloorHit( HZD_FLR *flr, SVECTOR *mov );
 int HZD_GetFloorLevel( void );
 

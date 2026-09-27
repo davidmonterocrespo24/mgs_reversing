@@ -29,8 +29,15 @@ STATIC int DG_TickCount = -1;
 
 /*---------------------------------------------------------------------------*/
 
+#ifdef __psyz
+unsigned mgs_dbg_vsynccb, mgs_dbg_drawotag;
+#endif
+
 int DG_VSyncCallbackFunc(void)
 {
+#ifdef __psyz
+    mgs_dbg_vsynccb++;
+#endif
     if (DrawSync(1) > 0)
     {
         dword_800B3790++;
@@ -53,6 +60,26 @@ void DG_ActFirst(Work *work)
 
     DG_HikituriFlagOld = DG_HikituriFlag;
 
+#ifdef __psyz
+    /* Konami's frame-drop-to-catch-up ("hikituri" = stutter) mechanism, off.
+     *
+     * When a frame overruns its budget the flag is raised, and then TWO
+     * different actors consult it: DG_SwapFrame skips DG_DrawOTag, and
+     * libgv/gvd.c's Act() skips the GV_Clock buffer flip. On the console
+     * those two decisions are always taken from the same value, so a dropped
+     * frame just repeats the previous picture. Here the actors run at
+     * different points of the list and can read the flag from different
+     * frames -- flip without draw, and the panel shows a buffer nobody drew:
+     * a black field between good ones, which is the flicker on the LCD.
+     *
+     * The mechanism exists to hold a 33 ms real-time budget this board
+     * cannot promise anyway. Pinning both flags low keeps every frame drawn
+     * and every flip paired with a draw: a heavy scene now runs slower
+     * instead of strobing. */
+    DG_HikituriFlagOld = 0;
+    DG_HikituriFlag = 0;
+#endif
+
     if (GM_GameStatus & STATE_NOSLOW)
     {
         if (DG_TickCount == -1)
@@ -67,6 +94,11 @@ void DG_ActFirst(Work *work)
         }
 
         ticks = mts_get_tick_count();
+#ifdef __psyz
+        /* see the note above: never raise it */
+        (void)ticks;
+        DG_HikituriFlag = 0;
+#else
         if (DG_TickCount + 2 < ticks)
         {
             DG_HikituriFlag = 1;
@@ -75,6 +107,7 @@ void DG_ActFirst(Work *work)
         {
             DG_HikituriFlag = 0;
         }
+#endif
 
         DG_TickCount += 2;
     }
@@ -88,6 +121,15 @@ void DG_ActFirst(Work *work)
     DG_SwapFrame();
 
     GV_UpdatePadSystem();
+#ifdef __psyz
+    /* The keyboard-over-serial pad ages its held buttons here, not on the
+     * vblank tick: this is the one point that means "a frame has read the
+     * pad", and the frame rate is not tied to the vblank rate. */
+    {
+        void Mgs_PadConsumed(void);
+        Mgs_PadConsumed();
+    }
+#endif
     GM_CurrentPadData = GV_PadData;
 
     if ((GM_PlayerStatus & PLAYER_SECOND_AVAILABLE) != 0)

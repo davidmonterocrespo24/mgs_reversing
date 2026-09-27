@@ -640,7 +640,7 @@ int Ending2_800C6C40(Work *work)
 }
 
 // polys is an array of (at least) 40 POLY_FT4;
-void Ending2_800C6C9C(POLY_FT4 *polys, Ending2Pair *tpages, u_long *ot)
+void Ending2_800C6C9C(POLY_FT4 *polys, Ending2Pair *tpages, OT_TYPE *ot)
 {
     POLY_FT4 *scratch;
     int       y;
@@ -691,7 +691,7 @@ void Ending2_800C6C9C(POLY_FT4 *polys, Ending2Pair *tpages, u_long *ot)
 }
 
 // polys is an array of (at least) 120 SPRT;
-void Ending2_800C6E00(SPRT *polys, Ending2Prims *prims, int arg2, u_long *ot, int shade)
+void Ending2_800C6E00(SPRT *polys, Ending2Prims *prims, int arg2, OT_TYPE *ot, int shade)
 {
     DR_TPAGE *tpages[4];
     int       u0;
@@ -812,7 +812,7 @@ void Ending2Act_800C71D8(Work *work)
     Ending2Prims   *prims;
     int            *var_s1;
     int             temp_s0;
-    u_long         *ot;
+    OT_TYPE         *ot;
     int             i;
     int             i2;
     unsigned short *var_a0, *var_a0_2;
@@ -854,14 +854,14 @@ void Ending2Act_800C71D8(Work *work)
         case 1:
             count = 3;
 
-            var_a0 = (unsigned short *)0x1F800200;
+            var_a0 = (unsigned short *)(SCRPAD_ADDR + 0x200);
             var_a0_2 = work->field_50 + 2;
             for (i2 = 16; i2 > 0; i2--)
             {
                 *var_a0++ = *var_a0_2++;
             }
 
-            var_a0_2 = (unsigned short *)0x1F800200;
+            var_a0_2 = (unsigned short *)(SCRPAD_ADDR + 0x200);
 
             for (i = 0; i < count; i++, roll_dword_800CA360--)
             {

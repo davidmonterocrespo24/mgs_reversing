@@ -134,7 +134,7 @@ void sub_8004D580(int pressed)
     sub_8004D4A0(pStru);
 }
 
-void menu_radio_draw_mem(MenuWork *work, u_long *ot)
+void menu_radio_draw_mem(MenuWork *work, OT_TYPE *ot)
 {
     TextConfig config;
     char       buffer[32];

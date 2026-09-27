@@ -262,7 +262,7 @@ void func_800C47A8(Work *work, int index)
     }
 }
 
-void func_800C4890(Work *work, u_long *ot, int arg2)
+void func_800C4890(Work *work, OT_TYPE *ot, int arg2)
 {
     int       i, j;
     SPRT     *sprt;

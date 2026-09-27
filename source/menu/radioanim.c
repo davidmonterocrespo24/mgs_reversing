@@ -5,7 +5,7 @@
 #include "mts/mts.h"
 #include "mts/taskid.h"
 
-#define OFFSET_TO_PTR2(ptr, offset) ((int)(offset) = (int)(ptr) + (int)(offset))
+#define OFFSET_TO_PTR2(ptr, offset) ((offset) = (__typeof__(offset))((int)(ptr) + (int)(offset)))
 
 extern menu_0x14 stru_800BDA48[2];
 

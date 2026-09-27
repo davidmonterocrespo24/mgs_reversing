@@ -36,7 +36,7 @@ void FocusAct_800CEA70(Work *work)
     int     f_len;
     int     near;
     int     far;
-    u_long *ot;
+    OT_TYPE *ot;
     SPRT   *sprt;
     DR_STP *stp;
 

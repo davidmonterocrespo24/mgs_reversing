@@ -36,16 +36,16 @@ unsigned short SECTION(".sbss") gCurrentRootCnt_800AB984;
 /*** bss ***/
 extern DG_CHANL DG_Chanls[3];
 
-extern u_long ot_background[68];
-extern u_long ot_primitive[516];
-extern u_long ot_overlay[4];
+extern OT_TYPE ot_background[68];
+extern OT_TYPE ot_primitive[516];
+extern OT_TYPE ot_overlay[4];
 
 extern void *obj_queue_background[8];
 extern void *obj_queue_primitive[256];
 
 extern DR_ENV bg_drawenv[2];
 
-extern u_long *ptr_800B1400[256];
+extern OT_TYPE ptr_800B1400[256];
 extern u_short gOldRootCnt_800B1DC8[32];
 
 // gets value of root counter 1 which determines time taken to finished drawing
@@ -56,7 +56,7 @@ STATIC void DG_DrawSyncCallback( void )
 }
 
 // guessed function name
-STATIC void DG_SetChanlOrderingTable( DG_CHANL *chanl, u_long *ot, int ot_size, void **queue, short queue_size, short link, short dblbuf )
+STATIC void DG_SetChanlOrderingTable( DG_CHANL *chanl, OT_TYPE *ot, int ot_size, void **queue, short queue_size, short link, short dblbuf )
 {
     int size;
 
@@ -160,7 +160,10 @@ void DG_DrawOTag( int which )
     gCurrentRootCnt_800AB984 = GetRCnt(RCntCNT1);
 
     /* channels 1 and 2 are linked into channel 0 */
-    DrawOTag(&DG_Chanls[0].env1[which].tag);
+    /* DR_ENV begins with O_TAG, so its first two words are exactly an
+     * OT_TYPE: it doubles as the head of the chain. Safe cast -- unlike
+     * casting an ARRAY of u_long, which would mis-stride. */
+    DrawOTag((OT_TYPE *)&DG_Chanls[0].env1[which]);
 }
 
 void DG_ClearChanlSystem( int which )
@@ -168,11 +171,11 @@ void DG_ClearChanlSystem( int which )
     DG_CHANL *chanl;
     int       i;
     int       size;
-    u_long   *ot;
-    u_long   *ot_end;
+    OT_TYPE  *ot;
+    OT_TYPE  *ot_end;
     DR_ENV   *env1;
     DR_ENV   *env2;
-    u_long   *chain;
+    OT_TYPE  *chain;
 
     chanl = DG_Chanls;
     for (i = 3 ; i > 0; i--)

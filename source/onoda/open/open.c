@@ -279,7 +279,7 @@ static void Open_800C4674(Work *work, int index)
     work->unk[index].num = 1;
 }
 
-static inline void AddTpage(Work *work, u_long *ot, int found, int i)
+static inline void AddTpage(Work *work, OT_TYPE *ot, int found, int i)
 {
     int       tp;
     DR_TPAGE *tpage;
@@ -293,7 +293,7 @@ static inline void AddTpage(Work *work, u_long *ot, int found, int i)
     }
 }
 
-static void title_open_800C47B8(Work *work, u_long *ot)
+static void title_open_800C47B8(Work *work, OT_TYPE *ot)
 {
     int   count;
     int   found;
@@ -8221,7 +8221,7 @@ void title_open_800D2AFC(Work *work)
     }
 }
 
-void title_open_800D2CA8(Work *work, u_long *ot)
+void title_open_800D2CA8(Work *work, OT_TYPE *ot)
 {
     int i;
 
@@ -8263,7 +8263,7 @@ void title_open_800D2CA8(Work *work, u_long *ot)
     title_open_800C47B8(work, ot);
 }
 
-void title_open_800D2E44(Work *work, u_long *ot)
+void title_open_800D2E44(Work *work, OT_TYPE *ot)
 {
     if (has_clear_data)
     {
@@ -8337,7 +8337,7 @@ void title_open_800D2E44(Work *work, u_long *ot)
     title_open_800C47B8(work, ot);
 }
 
-void title_open_800D3500(Work *work, u_long *ot)
+void title_open_800D3500(Work *work, OT_TYPE *ot)
 {
     int i;
 
@@ -8423,7 +8423,7 @@ void title_open_800D3500(Work *work, u_long *ot)
 
 static void Act(Work *work)
 {
-    u_long   *ot;
+    OT_TYPE   *ot;
     POLY_FT4 *packs;
 
     ot = DG_ChanlOTag(1);

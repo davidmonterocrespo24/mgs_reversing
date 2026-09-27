@@ -140,7 +140,7 @@ static void VibEdit_800C36BC(Work *work)
     VibPair *pairs;
     LINE_F2 *line;
     TILE    *tile;
-    u_long  *ot;
+    OT_TYPE  *ot;
     int      x0;
     int      i;
 

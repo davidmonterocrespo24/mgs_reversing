@@ -42,3 +42,12 @@ research/
 .sentry-native
 obj_psx_dev/
 build/env/
+
+# ESP32 port build outputs / fetched components
+build-xtensa/
+esp32/build/
+esp32/build-xiao/
+esp32/managed_components/
+esp32/sdkconfig
+port/consola/test/build/
+port/consola/test/sdkconfig

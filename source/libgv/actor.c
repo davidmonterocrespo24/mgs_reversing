@@ -147,6 +147,10 @@ void GV_ExecActorSystem( void )
 {
     AList *list;
     int    i, pause;
+#ifdef __psyz
+    int dbg_ran = 0, dbg_seen = 0;
+    static unsigned dbg_beat;
+#endif
 
     list = ActorList;
     for ( i = GV_ACTOR_LEVEL; i > 0; i-- )
@@ -163,8 +167,14 @@ void GV_ExecActorSystem( void )
                 extern int GM_CurrentMap;
 
                 next = this->next;
+#ifdef __psyz
+                dbg_seen++;
+#endif
                 if ( ( act = this->act ) != NULL )
                 {
+#ifdef __psyz
+                    dbg_ran++;
+#endif
                     act( this );
                 }
                 GM_CurrentMap = 0;
@@ -172,6 +182,13 @@ void GV_ExecActorSystem( void )
         }
         list++;
     }
+#ifdef __psyz
+    if ((dbg_beat++ % 1200u) == 0u)
+    {
+        printf("[act] pass %u: ran %d of %d, pause %08x" "\n",
+               dbg_beat, dbg_ran, dbg_seen, (unsigned)GV_PauseLevel);
+    }
+#endif
 }
 
 /**

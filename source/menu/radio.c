@@ -130,7 +130,7 @@ enum CodecAction {
  * @param ot Pointer to the ordering table.
  * @param opacity The intensity for the fade effect (0-255).
  */
-void FadeCodecScreen(MenuWork *work, u_long *ot, int opacity)
+void FadeCodecScreen(MenuWork *work, OT_TYPE *ot, int opacity)
 {
     TILE     *tile;
     DR_TPAGE *tpage;
@@ -778,7 +778,7 @@ void sub_80041118(MenuWork *work)
     font_update(kcb);
 }
 
-int draw_radio_message(MenuWork *work, u_long *ot)
+int draw_radio_message(MenuWork *work, OT_TYPE *ot)
 {
     KCB  *kcb;
     SPRT *pPrim;
@@ -817,7 +817,7 @@ void sub_8004124C(MenuWork *work)
 // was a new function added in VR?
 // or simply I made a counting mistake and no function was added
 
-int menu_radio_codec_helper_helper12_80041280(MenuWork *work, u_long *ot, GV_PAD *pPad)
+int menu_radio_codec_helper_helper12_80041280(MenuWork *work, OT_TYPE *ot, GV_PAD *pPad)
 {
     menu_chara_struct *pMenuChara;
     KCB               *kcb;
@@ -906,7 +906,7 @@ int menu_radio_codec_helper_helper12_80041280(MenuWork *work, u_long *ot, GV_PAD
     return 0;
 }
 
-void draw_radio_wait_mark(MenuWork *work, u_long *ot)
+void draw_radio_wait_mark(MenuWork *work, OT_TYPE *ot)
 {
     MenuPrim *pOtBuffer; // $v1
     POLY_F3 *pPrim; // $a0
@@ -958,7 +958,7 @@ STATIC int   dword_800AB63C = 0;
 STATIC short gCodecFadingStep = 0;
 STATIC int   dword_800AB644 = -1;
 
-STATIC void menu_radio_codec_helper_8004158C(MenuWork *work, u_long *ot, GV_PAD *pPad)
+STATIC void menu_radio_codec_helper_8004158C(MenuWork *work, OT_TYPE *ot, GV_PAD *pPad)
 {
     menu_chara_struct *pCharaStruct;
     menu_chara_struct *pCharaStruct2;
@@ -1477,7 +1477,7 @@ STATIC void menu_radio_init_nullsub_80042190(MenuWork *work)
 
 STATIC int dword_800AB648 = 0;
 
-STATIC void menu_radio_update_80042198(MenuWork *work, u_long *ot)
+STATIC void menu_radio_update_80042198(MenuWork *work, OT_TYPE *ot)
 {
     GCL_ARGS args;
     long     argv[2];
@@ -2012,7 +2012,7 @@ void _menu_number_draw_string(MenuPrim *pGlue, TextConfig *pTextConfig, const ch
     pTextConfig->xpos = _menu_draw_number_draw_helper(pSprt, pGlue->next, pTextConfig->xpos, width, pTextConfig->flags);
 }
 
-void menu_number_draw_magazine(MenuWork *work, u_long *ot, int xoff, int yoff,
+void menu_number_draw_magazine(MenuWork *work, OT_TYPE *ot, int xoff, int yoff,
                                int pMagSize, int pAmmo, int pSubCnt2)
 {
     SPRT *sprt;
@@ -2046,7 +2046,7 @@ void menu_number_draw_magazine(MenuWork *work, u_long *ot, int xoff, int yoff,
     }
 }
 
-int menu_number_draw(MenuWork *work, u_long *ot, int xpos, int ypos, int number, int flags)
+int menu_number_draw(MenuWork *work, OT_TYPE *ot, int xpos, int ypos, int number, int flags)
 {
     TextConfig textConfig; // [sp+10h] [-10h] BYREF
 
@@ -2090,7 +2090,7 @@ int menu_number_draw_number2(MenuWork *work, int xpos, int ypos, int current, in
     return textConfig.xpos;
 }
 
-int menu_number_draw_string(MenuWork *work, u_long *ot, int xpos, int ypos, const char *str, int flags)
+int menu_number_draw_string(MenuWork *work, OT_TYPE *ot, int xpos, int ypos, const char *str, int flags)
 {
     TextConfig textConfig;
 
@@ -2321,3 +2321,79 @@ void menu_draw_triangle(MenuPrim *pGlue, Menu_Triangle *pTriangle)
     setPolyF3(pPrim);
     addPrim(pGlue->ot, pPrim);
 }
+
+#ifdef __psyz
+/*---------------------------------------------------------------------------*/
+/* Answer codec calls without opening the codec.
+ *
+ * MGS's story runs on the codec. A stage script places a call with
+ *   radio -c <freq> <message> <time> -p proc:<id>
+ * and the game only advances when that call is ANSWERED: the pickup fires the
+ * -p procedure, and it is that procedure which builds the next beat of the
+ * scene. s00a is the clearest case -- its scenario is
+ *   if (var[5] < 6) { var[5] = 6; varsave; radio -c 14085 ... -p proc:0xad2d }
+ *   else            { 40 charas, 24 traps, 13 ntraps, the water area, ... }
+ * and proc 0xad2d is a bare "restart", which re-runs the scenario with var[5]
+ * already 6 so the else branch builds the dock. Without the pickup the first
+ * pass is all that ever runs, which is why the dock had no water, no ladder
+ * and one map section: not a renderer fault, a scene that was never built.
+ *
+ * The pickup normally happens inside menu_radio_update_80042198, which this
+ * port does not run: it takes over the screen, changes resolution, parks the
+ * game at GV_PAUSE_STOP and drives the FACE.DAT/voice state machine, and that
+ * last part dereferences a null pointer here (radioanim.c:145). So rather than
+ * re-enable the whole thing, reproduce only the two lines of it that matter --
+ * mark the call answered and dispatch its procedure -- and leave the codec
+ * screen off until the face data path is ported.
+ *
+ * The type field mirrors what the real pickup computes at radio.c:1013, so the
+ * procedure receives the same argv it would have on the console. */
+void MENU_RadioDrainHeadless(void)
+{
+    GCL_ARGS args;
+    long     argv[2];
+
+    if (gRadioIncomingCall_8009E708.field_0 <= 0)
+    {
+        return;                     /* no call pending */
+    }
+
+    if (gRadioIncomingCall_8009E708.field_2_timer > 0)
+    {
+        /* still ringing. A call placed with time >= 5 waits to be answered and
+         * is missed if it is not; one placed with time 0 rings out and is then
+         * picked up automatically. Only the second kind can be answered with
+         * no user interface, so let the other kind lapse the way it would. */
+        if (--gRadioIncomingCall_8009E708.field_2_timer > 0)
+        {
+            return;
+        }
+        if (gRadioIncomingCall_8009E708.field_8)
+        {
+            gRadioIncomingCall_8009E708.field_0 = 0;   /* missed */
+            return;
+        }
+        gRadioIncomingCall_8009E708.field_2_timer = -1;
+        return;
+    }
+
+    gMenuCallbackProc_800ABB08.type =
+        (~gRadioIncomingCall_8009E708.field_2_timer << 4) | 2;
+    gMenuCallbackProc_800ABB08.param2 = gRadioIncomingCall_8009E708.field_0;
+    gRadioIncomingCall_8009E708.field_0 = 0;
+
+    printf("[codec] answered: proc %X type %d\n",
+           gMenuCallbackProc_800ABB08.procNameHashed,
+           gMenuCallbackProc_800ABB08.type);
+
+    if (gMenuCallbackProc_800ABB08.type != 0xF &&
+        gMenuCallbackProc_800ABB08.procNameHashed > 0)
+    {
+        args.argc = 2;
+        args.argv = argv;
+        argv[0] = gMenuCallbackProc_800ABB08.type & 0xF;
+        argv[1] = gMenuCallbackProc_800ABB08.param2;
+        GCL_ExecProc(gMenuCallbackProc_800ABB08.procNameHashed, &args);
+    }
+}
+#endif

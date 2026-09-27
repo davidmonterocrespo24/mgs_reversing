@@ -1,5 +1,13 @@
 #include "libfs.h"
 
+/* __psyz_cd_rename: off-console there is no drive to read. port/virtual_cd.c
+ * supplies these over ordinary files; the disc versions keep compiling so the
+ * real ISO9660 layout stays documented, but nothing links against them. */
+#ifdef __psyz
+#define FS_CdMakePositionTable FS_CdMakePositionTable_disc
+#endif
+
+
 #include <stdio.h>
 #include <string.h>
 #include "common.h"

@@ -95,6 +95,12 @@ STATIC POLY_GT4 *DG_ShadePacksIndirect( unsigned int *nindices, POLY_GT4 *packs,
 
         if ( v0123 & mask )
         {
+#ifdef __psyz
+            {
+                static int b = 0;
+                if (b > 0) { b--; printf("[shade] resolve %p\n", (void*)packs); }
+            }
+#endif
             if ( v0123 & 0x80 )
             {
                 color = **(int **)&packs->r0;

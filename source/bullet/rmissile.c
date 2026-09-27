@@ -203,7 +203,7 @@ static void DrawEnemyText(Work *work)
 static void DrawMissileHud(Work *work)
 {
     int width;
-    u_long *ot;
+    OT_TYPE *ot;
     POLY_F4 *bar;
     CONTROL ctrl;
 

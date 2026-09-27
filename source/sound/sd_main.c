@@ -117,12 +117,18 @@ void SdInt(void)
     char buf[98];
     (void)buf; // not enough stack used without this
 
+    MGS_WHERE("SdInt: entry");
     printf("Start Task:SdInt\n");
+    MGS_WHERE("SdInt: after the printf");
     sd_init();
+    MGS_WHERE("SdInt: sd_init done");
     mts_wup_tsk(MTSID_SOUND_MAIN);
+    MGS_WHERE("SdInt: wup_tsk done");
     while (1)
     {
+        MGS_WHERE("SdInt: waiting for interrupt");
         mts_receive(MTS_TASK_INTR, NULL);
+        MGS_WHERE("SdInt: interrupt received");
         IntSdMain();
         if (SpuIsTransferCompleted(SPU_TRANSFER_PEEK) == 1)
         {
@@ -145,7 +151,9 @@ void sd_init(void)
     SpuCommonAttr c_attr;
     SpuReverbAttr r_attr;
 
+    MGS_WHERE("sd_init: SpuInit");
     SpuInit();
+    MGS_WHERE("sd_init: SpuInitMalloc");
     SpuInitMalloc(24, spu_malloc_rec);
     c_attr.mask = SPU_COMMON_MVOLL | SPU_COMMON_MVOLR;
     c_attr.mvol.left = 0;
@@ -154,6 +162,7 @@ void sd_init(void)
     SpuSetPitchLFOVoice(SPU_OFF, SPU_ALLCH);
     SpuSetNoiseVoice(SPU_OFF, SPU_ALLCH);
     SpuSetReverb(SPU_OFF);
+    MGS_WHERE("sd_init: SpuSetTransferMode");
     SpuSetTransferMode(SPU_TRANSFER_BY_DMA);
     blank_data_addr = SpuMalloc(512);
     printf("blank_data_addr=%x\n", blank_data_addr);
@@ -312,7 +321,14 @@ void keyOn(unsigned int ch)
 
 int sd_mem_alloc(void)
 {
+#ifdef __psyz
+    {
+        extern unsigned char mgs_main_ram[];
+        sng_data = mgs_main_ram + 0x80000 + 0xC9000; /* MEM_BOTTOM: same spot as the console */
+    }
+#else
     sng_data = (unsigned char *)0x801E0000;
+#endif
     printf("sng_data %X\n", (unsigned int)sng_data);
 
     wave_header = (WAVE_W *)(sng_data + 0x4000);

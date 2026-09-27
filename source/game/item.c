@@ -245,7 +245,7 @@ static void Act(Work *work)
     int         shake;
     int         state;
     int         dx, dy, dz;
-    u_long     *ot;
+    OT_TYPE     *ot;
     LINE_F4    *line;
     int         x, y;
 

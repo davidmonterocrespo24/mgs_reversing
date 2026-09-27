@@ -53,7 +53,7 @@ extern CONTROL        *tenage_ctrls_800BDD30[16];
 extern HITTABLE           GM_C4Datas[C4_COUNT];
 extern HITTABLE           GM_ClayDatas[8];
 extern unsigned char      gBulNames_800BDC78[64];
-unsigned char             gBulNames_800BDC78[64];
+extern unsigned char             gBulNames_800BDC78[64];
 extern int                dword_8009F440;
 extern int                dword_8009F444;
 extern int                dword_8009F46C[];
@@ -1907,7 +1907,19 @@ static inline int sna_weapon_switching_helper2_800511BC(SnaInitWork *work, int c
     work->field_926 = 0;
     work->field_924 = 0;
     work->field_908_weapon_actor = pWeaponActor;
+#ifdef __psyz
+    /* Unarmed is weapon id -1, and on the console indexing the array with it
+     * landed on actions_no_weapon_8009ED70 BY MEMORY LAYOUT: the ROM placed
+     * that struct exactly 28 bytes (one ACTPACK) before the array. A native
+     * linker gives no such guarantee -- here [-1] hit a neighboring function
+     * pointer and ->still->stand read from code space. Make the layout trick
+     * explicit. */
+    work->actpack = (GM_CurrentWeaponId < 0)
+                        ? &actions_no_weapon_8009ED70
+                        : &weapon_actions_8009ED8C[GM_CurrentWeaponId];
+#else
     work->actpack = &weapon_actions_8009ED8C[GM_CurrentWeaponId];
+#endif
 
     return 0;
 }
@@ -7927,7 +7939,14 @@ void sna_init_main_logic_800596FC(SnaInitWork *work)
     }
 
     snake_weapon_idx_800BDCBA = work->field_91C_weapon_idx;
+#ifdef __psyz
+    /* unarmed: the ammo pointer is NULL, and the console read address 0
+     * without complaint (garbage in, ignored). A host cannot. */
+    snake_weapon_max_ammo_800BDCBC =
+        work->field_918_n_bullets ? *work->field_918_n_bullets : 0;
+#else
     snake_weapon_max_ammo_800BDCBC = *work->field_918_n_bullets;
+#endif
     snake_mag_size_800BDCB8 = GM_Magazine;
 }
 
@@ -8347,7 +8366,19 @@ static inline void InitEmpty(SnaInitWork *work)
 
     sna_800515BC(work, 0);
 
+#ifdef __psyz
+    /* Unarmed is weapon id -1, and on the console indexing the array with it
+     * landed on actions_no_weapon_8009ED70 BY MEMORY LAYOUT: the ROM placed
+     * that struct exactly 28 bytes (one ACTPACK) before the array. A native
+     * linker gives no such guarantee -- here [-1] hit a neighboring function
+     * pointer and ->still->stand read from code space. Make the layout trick
+     * explicit. */
+    work->actpack = (GM_CurrentWeaponId < 0)
+                        ? &actions_no_weapon_8009ED70
+                        : &weapon_actions_8009ED8C[GM_CurrentWeaponId];
+#else
     work->actpack = &weapon_actions_8009ED8C[GM_CurrentWeaponId];
+#endif
     work->field_A28 = 450;
     work->field_A44 = work->control.mov;
     work->field_A60 = work->control.mov;

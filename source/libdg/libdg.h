@@ -254,7 +254,7 @@ typedef struct DG_Image
 
 typedef struct DG_CHANL
 {
-    u_long   *ot[ 2 ]; // 257 pointers? // One for each active buffer
+    OT_TYPE  *ot[ 2 ]; // 257 pointers? // One for each active buffer
     short     ot_size;
     short     link;
     short     dblbuf; /* double buffer */
@@ -321,7 +321,7 @@ enum {
 };
 // clang-format on
 
-enum DG_CHANL
+enum DG_CHANL_UNIT
 {
     DG_SCREEN_CHANL,
     DG_BOUND_CHANL,
@@ -622,7 +622,7 @@ static inline DG_CHANL *DG_Chanl( int idx )
     return &DG_Chanls[ idx + 1 ];
 }
 
-static inline u_long *DG_ChanlOTag(int index)
+static inline OT_TYPE *DG_ChanlOTag(int index)
 {
     extern int GV_Clock;
     return DG_Chanl(index)->ot[GV_Clock];

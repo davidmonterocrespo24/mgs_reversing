@@ -111,6 +111,30 @@ static void PadDemo_800DCBE8(Work *work)
 
 static void Act(Work *work)
 {
+#ifdef __psyz
+    /* A cutscene is two halves: a stream carrying the voice and camera work,
+     * and a RECORDING OF THE CONTROLLER that walks Snake through the scene.
+     * They run together on the console -- the branch below waits for the
+     * stream before letting the recording play.
+     *
+     * This board declines streams (see game/strctrl.c), so GM_StreamStatus()
+     * answers "nothing playing" and the recording starts immediately and
+     * alone: Snake strolls off under his own power while the player's input is
+     * masked out and nothing else happens. That is the "he moves right by
+     * himself" -- the choreography of a scene whose picture and sound cannot
+     * play.
+     *
+     * Skip it the same way pressing START does, which is the game's own way
+     * out of a demo and which runs the completion procedure through Die, so
+     * the script carries on and control returns. Restore this along with the
+     * streaming path. */
+    work->f44 = FALSE;
+    GM_GameStatus &= ~(STATE_PADDEMO | STATE_NOSLOW | STATE_PADRELEASE |
+                       GAME_FLAG_BIT_13);
+    printf("[paddemo] skipped: its cutscene stream cannot play here\n");
+    GV_DestroyActor(&work->actor);
+    return;
+#else
     if (GM_StreamStatus() == 0)
     {
         GV_PauseLevel |= GV_PAUSE_MENU;
@@ -126,6 +150,7 @@ static void Act(Work *work)
         GV_PauseLevel &= ~GV_PAUSE_MENU;
         PadDemo_800DCBE8(work);
     }
+#endif
 }
 
 static void Die(Work *work)

@@ -334,6 +334,18 @@ void GV_UpdatePadSystem(void)
     ret |= s3 & 0xF000F000;
     button = s3;
     GV_CopyMemory(GV_PadData, &GV_PadData[2], sizeof(GV_PAD)*2);
+#ifdef __psyz
+    {
+        static int budget = 20;
+        if (budget > 0 && (GV_PadData[0].press || GV_PadData[0].status))
+        {
+            budget--;
+            if (0) printf("[gvpad] status %04x press %04x\n",
+                   (unsigned)GV_PadData[0].status,
+                   (unsigned)GV_PadData[0].press);
+        }
+    }
+#endif
 
     prev = dword_800AB954;
     dword_800AB954 = ret;

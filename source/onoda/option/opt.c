@@ -193,7 +193,7 @@ static void option_800C352C(Work *work, int index)
     }
 }
 
-static void option_800C3664(Work *work, u_long *ot)
+static void option_800C3664(Work *work, OT_TYPE *ot)
 {
     int       index;
     int       i, j, k;
@@ -431,7 +431,7 @@ static void option_800C3C74(Work *work)
     }
 }
 
-static void option_800C4130(Work *work, u_long *ot)
+static void option_800C4130(Work *work, OT_TYPE *ot)
 {
     int i;
 
@@ -1699,7 +1699,7 @@ static void option_800C5950( Work *work )
 static void Act(Work *work)
 {
     int       fade;
-    u_long   *ot;
+    OT_TYPE   *ot;
     POLY_FT4 *poly;
     int       i;
     int       x, y;

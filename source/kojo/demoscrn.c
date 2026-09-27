@@ -26,35 +26,35 @@ void DemoScreenModelsSingle(DG_OBJS *pObjs, int n_models)
     DG_OBJ *pObj;
     int     count;
 
-    pMatrix = (MATRIX *)0x1F800020;
-    pVector = (VECTOR *)0x1F800000;
+    pMatrix = (MATRIX *)(SCRPAD_ADDR + 0x020);
+    pVector = (VECTOR *)(SCRPAD_ADDR + 0x000);
 
     pMatrix->t[0] -= pVector[56].vx;
     pMatrix->t[1] -= pVector[56].vy;
     pMatrix->t[2] -= pVector[56].vz;
 
-    gte_SetRotMatrix((MATRIX *)0x1F800000);
-    gte_SetTransMatrix((MATRIX *)0x1F800000);
+    gte_SetRotMatrix((MATRIX *)(SCRPAD_ADDR + 0x000));
+    gte_SetTransMatrix((MATRIX *)(SCRPAD_ADDR + 0x000));
 
-    ApplyRotMatrixLV((VECTOR *)0x1F800034, (VECTOR *)0x1F800054);
+    ApplyRotMatrixLV((VECTOR *)(SCRPAD_ADDR + 0x034), (VECTOR *)(SCRPAD_ADDR + 0x054));
 
-    gte_ldclmv(0x1F800020);
+    gte_ldclmv((SCRPAD_ADDR + 0x020));
     gte_rtir();
-    gte_stclmv(0x1F800040);
+    gte_stclmv((SCRPAD_ADDR + 0x040));
 
-    gte_ldclmv(0x1F800022);
+    gte_ldclmv((SCRPAD_ADDR + 0x022));
     gte_rtir();
-    gte_stclmv(0x1F800042);
+    gte_stclmv((SCRPAD_ADDR + 0x042));
 
-    gte_ldclmv(0x1F800024);
+    gte_ldclmv((SCRPAD_ADDR + 0x024));
     gte_rtir();
-    gte_stclmv(0x1F800044);
+    gte_stclmv((SCRPAD_ADDR + 0x044));
 
     pObj = pObjs->objs;
     for (count = n_models; count > 0; count--)
     {
-        pObj->world = *(MATRIX *)0x1F800020;
-        pObj->screen = *(MATRIX *)0x1F800040;
+        pObj->world = *(MATRIX *)(SCRPAD_ADDR + 0x020);
+        pObj->screen = *(MATRIX *)(SCRPAD_ADDR + 0x040);
         pObj++;
     }
 }
@@ -67,11 +67,11 @@ void DemoScreenModels(DG_OBJS* pObjs, int n_models)
     DG_OBJ *pObj;
     int     count;
 
-    gte_SetRotMatrix((MATRIX *)0x1F800000);
-    gte_SetTransMatrix((MATRIX *)0x1F800000);
+    gte_SetRotMatrix((MATRIX *)(SCRPAD_ADDR + 0x000));
+    gte_SetTransMatrix((MATRIX *)(SCRPAD_ADDR + 0x000));
 
-    pMatrix = (MATRIX *)0x1F800040;
-    pVector = (VECTOR *)0x1F800000;
+    pMatrix = (MATRIX *)(SCRPAD_ADDR + 0x040);
+    pVector = (VECTOR *)(SCRPAD_ADDR + 0x000);
 
     x = pVector[56].vx;
     y = pVector[56].vy;
@@ -111,14 +111,14 @@ void DemoApplyMovs(DG_OBJS* pObjs, int n_models)
     int      count;
 
     pMovs = pObjs->movs;
-    gte_SetRotMatrix(0x1F800020);
+    gte_SetRotMatrix((SCRPAD_ADDR + 0x020));
 
-    pMatrix = (MATRIX *)0x1F800040;
+    pMatrix = (MATRIX *)(SCRPAD_ADDR + 0x040);
 
     pObj = pObjs->objs;
     for (count = n_models; count > 0; count--)
     {
-        gte_SetTransMatrix((MATRIX *)0x1F800040 + pObj->model->parent);
+        gte_SetTransMatrix((MATRIX *)(SCRPAD_ADDR + 0x040) + pObj->model->parent);
         gte_ldv0(pMovs);
         gte_rt();
         gte_ReadRotMatrix(pMatrix);
@@ -145,14 +145,14 @@ void DemoApplyRots(DG_OBJS *pObjs, int n_models)
     int      count;
     MATRIX  *pParent;
 
-    pWorld = (MATRIX *)0x1F800040;
+    pWorld = (MATRIX *)(SCRPAD_ADDR + 0x040);
     pObj = pObjs->objs;
-    pSavedTransform = (MATRIX *)0x1F800360;
+    pSavedTransform = (MATRIX *)(SCRPAD_ADDR + 0x360);
     pRots = pObjs->rots;
     pWaistRot = pObjs->waist_rot;
     pAdjust = pObjs->adjust;
     pMdl = pObj->model;
-    pWorkMatrix = (MATRIX *)0x1F800340;
+    pWorkMatrix = (MATRIX *)(SCRPAD_ADDR + 0x340);
 
     if (pWaistRot)
     {
@@ -169,12 +169,12 @@ void DemoApplyRots(DG_OBJS *pObjs, int n_models)
 
     if (pAdjust == NULL)
     {
-        gte_CompMatrix(0x1F800020, pWorkMatrix, pWorkMatrix);
+        gte_CompMatrix((SCRPAD_ADDR + 0x020), pWorkMatrix, pWorkMatrix);
 
         for (count = n_models; count > 0; count--)
         {
             pMdl = pObj->model;
-            pParent = (MATRIX *)0x1F800040 + pMdl->parent;
+            pParent = (MATRIX *)(SCRPAD_ADDR + 0x040) + pMdl->parent;
 
             RotMatrixZYX_gte(pRots, pWorld);
 
@@ -199,13 +199,13 @@ void DemoApplyRots(DG_OBJS *pObjs, int n_models)
     }
     else
     {
-        *pSavedTransform = *(MATRIX *)0x1F800020;
-        *(MATRIX *)0x1F800020 = DG_ZeroMatrix;
+        *pSavedTransform = *(MATRIX *)(SCRPAD_ADDR + 0x020);
+        *(MATRIX *)(SCRPAD_ADDR + 0x020) = DG_ZeroMatrix;
 
         for (count = n_models; count > 0; count--)
         {
             pMdl = pObj->model;
-            pParent = (MATRIX *)0x1F800040 + pMdl->parent;
+            pParent = (MATRIX *)(SCRPAD_ADDR + 0x040) + pMdl->parent;
 
             RotMatrixZYX_gte(pRots, pWorld);
 
@@ -243,13 +243,13 @@ void DemoApplyRots(DG_OBJS *pObjs, int n_models)
             pAdjust++;
         }
 
-        *(MATRIX *)0x1F800020 = *pSavedTransform;
-        pWorld = (MATRIX *)0x1F800040;
+        *(MATRIX *)(SCRPAD_ADDR + 0x020) = *pSavedTransform;
+        pWorld = (MATRIX *)(SCRPAD_ADDR + 0x040);
 
         pObj = pObjs->objs;
         for (count = n_models; count > 0; count--)
         {
-            gte_CompMatrix(0x1F800020, pWorld, pWorld);
+            gte_CompMatrix((SCRPAD_ADDR + 0x020), pWorld, pWorld);
             pObj->world = *pWorld;
             pObj++;
             pWorld++;

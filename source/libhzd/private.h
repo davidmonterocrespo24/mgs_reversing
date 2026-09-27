@@ -43,16 +43,16 @@ static inline void Mul2D(SVECTOR *out, SVECTOR *in, int num, int denom)
 
 static inline long Dot2D(SVECTOR *v1, SVECTOR *v2)
 {
-    *(short *)0x1F800004 = -v2->vy;
-    *(short *)0x1F800006 = v2->vx;
-    gte_NormalClip(0, *(long *)v1, *(long *)0x1F800004, 0x1F800008);
-    return *(long *)0x1F800008;
+    *(short *)(SCRPAD_ADDR + 0x004) = -v2->vy;
+    *(short *)(SCRPAD_ADDR + 0x006) = v2->vx;
+    gte_NormalClip(0, *(long *)v1, *(long *)(SCRPAD_ADDR + 0x004), (SCRPAD_ADDR + 0x008));
+    return *(long *)(SCRPAD_ADDR + 0x008);
 }
 
 static inline long Det2D(SVECTOR *v1, SVECTOR *v2)
 {
-    gte_NormalClip(0, *(long *)v1, *(long *)v2, 0x1F800008);
-    return *(long *)0x1F800008;
+    gte_NormalClip(0, *(long *)v1, *(long *)v2, (SCRPAD_ADDR + 0x008));
+    return *(long *)(SCRPAD_ADDR + 0x008);
 }
 
 static inline long Len2D(SVECTOR *vec)

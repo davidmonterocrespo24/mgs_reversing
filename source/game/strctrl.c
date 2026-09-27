@@ -38,6 +38,49 @@ static void Act( StreamCtrlWork *work )
 
     GM_CurrentMap = work->map;
     FS_StreamSync();
+
+#ifdef __psyz
+    {
+        /* Watchdog: never let a stalled stream hold the game hostage.
+         *
+         * The stage machine will not change stage while a stream is running --
+         * gamed.c:588 gates on GM_StreamStatus() == -1 -- and the screen is
+         * already blanked at that point (gamed.c:476, "keep it dark until the
+         * new stage is ready"). So a stream that starts and never finishes is
+         * not a missing cutscene: it is a permanently black screen with a
+         * perfectly healthy frame loop behind it. That is exactly what
+         * appeared the moment DEMO.DAT reached the card -- before that the
+         * file was absent, the stream was declined, and the game moved on.
+         *
+         * Give it ten seconds of real progress. Any state change counts as
+         * progress, so a slow stream is never punished; only a stuck one is.
+         * On expiry, hand it to the same Act2 that ends a finished stream, so
+         * the actor is destroyed, Die runs its callback, and the stage machine
+         * is released. */
+        static int last_state;
+        static unsigned stuck;
+
+        if ( work->field_20_state != last_state )
+        {
+            last_state = work->field_20_state;
+            stuck = 0;
+        }
+        else if ( ++stuck > 600u )
+        {
+            printf( "[stream] stalled in state %d -- abandoning so the game "
+                    "can continue\n", work->field_20_state );
+            stuck = 0;
+            /* Destroy outright rather than handing over to Act2: Act2 waits on
+             * FS_StreamTaskState() too, which is precisely what is stuck, so
+             * that just moves the deadlock. Die zeroes field_20_state, which
+             * is what GM_StreamStatus() reports and what the stage machine is
+             * waiting for. */
+            GV_DestroyActor( &work->actor );
+            return;
+        }
+    }
+#endif
+
     switch ( work->field_20_state )
     {
     case 1:
@@ -148,6 +191,52 @@ void *NewStreamControl( int stream_code, int gcl_proc, int flags )
 {
     printf( "NewStream %d\n", stream_code );
 
+#ifdef __psyz
+    /* Streams read from the big disc files -- DEMO.DAT for in-engine
+     * cutscenes, VOX.DAT for speech, ZMOVIE.STR for full-motion video. Those
+     * are half a gigabyte between them and are not on this board, so the
+     * virtual CD answers their sectors with nothing at all.
+     *
+     * On the console that cannot happen, so nobody checks: the stream actor
+     * simply waits for data that never arrives, and the script waits for the
+     * stream. That is a silent, permanent hang -- the game sat inside init
+     * with its frame loop running and an empty screen, because init opens with
+     * a movie. Same shape as a door leading to a stage that was never packed,
+     * and the same answer: refuse the request here, where the caller can still
+     * carry on, and run the completion callback so whatever was waiting on the
+     * stream gets its turn. */
+    {
+        /* CD STREAMING IS NOT IMPLEMENTED ON THIS BOARD.
+         *
+         * The virtual CD serves ordinary sector reads, which is what stage
+         * loading needs, but the PSX's *streaming* path is a different
+         * mechanism: the drive delivers sectors continuously into a ring while
+         * the game consumes them, driven by a callback our layer never wires
+         * up. So fs_stream_read never clears, FS_StreamSync keeps returning
+         * "busy", fs_stream_task_state stays at -1, and strctrl's state
+         * machine sits in state 1 forever.
+         *
+         * That is not a harmless stall. gamed.c:588 will not change stage
+         * while a stream is running and gamed.c:476 has already blanked the
+         * screen for the load, so one stuck stream is a permanently black
+         * screen -- and a cutscene queues several, so a watchdog only turns it
+         * into ten seconds of black per stream.
+         *
+         * Decline up front and run the completion callback, so whatever waited
+         * on the stream proceeds immediately. The cost is the in-engine
+         * cutscenes and the voice-overs; the gain is a game that plays. Remove
+         * this once the streaming path exists -- the data is on the card and
+         * the rest of the machinery is intact. */
+        printf( "[stream] sector %d declined: CD streaming not implemented on "
+                "this board\n", stream_code );
+        if ( gcl_proc < 0 )
+        {
+            GCL_ExecProc( gcl_proc & 0xFFFF, 0 );
+        }
+        return (void *)&strctrl_work;
+    }
+#endif
+
     if ( strctrl_work.field_20_state )
     {
         printf( "pend!!\n" );
@@ -165,7 +254,17 @@ void *NewStreamControl( int stream_code, int gcl_proc, int flags )
         return (void *)&strctrl_work;
     }
 
+#ifdef __psyz
+    /* the console put the stream buffer in the 128 KB above MEM_BOTTOM;
+     * same offset, real memory */
+    {
+        extern unsigned char mgs_main_ram[];
+        /* 0xC9000 is MEM_BOTTOM within the reservation (libgv.h) */
+        FS_StreamInit( mgs_main_ram + 0x80000 + 0xC9000 + 0x7800, FS_CDLOAD_BUF_SIZE );
+    }
+#else
     FS_StreamInit( ( void * )0x801E7800, FS_CDLOAD_BUF_SIZE );
+#endif
     GV_InitActor( EXEC_LEVEL, ( GV_ACT * )&strctrl_work, NULL );
     GV_SetNamedActor( ( GV_ACT * )&strctrl_work, &Act, &Die, "strctrl.c" );
 

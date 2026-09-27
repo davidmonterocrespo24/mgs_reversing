@@ -1428,7 +1428,7 @@ void s12a_wolf2_800D1EBC(Wolf2Work *work)
     MATRIX  world2;
     TARGET *target1;
     TARGET *target2;
-    u_long *ot;
+    OT_TYPE *ot;
     u_short x, y, z;
 
     work->fA64 = 0;

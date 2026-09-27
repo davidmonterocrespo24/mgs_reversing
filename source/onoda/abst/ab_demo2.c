@@ -278,7 +278,7 @@ static void abst_800CA6FC(Work *work, int index)
     }
 }
 
-static void abst_800CA7F0(Work *work, u_long *ot, int arg2)
+static void abst_800CA7F0(Work *work, OT_TYPE *ot, int arg2)
 {
     int       i, j;
     SPRT     *sprt;

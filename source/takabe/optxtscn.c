@@ -145,7 +145,7 @@ void OptxtscnAct_800CCDE8(Work *work)
 {
     OpTxtScnUnk *unk;
     DR_MOVE     *move;
-    u_long      *ot;
+    OT_TYPE      *ot;
     int          i;
     char         xoff;
 

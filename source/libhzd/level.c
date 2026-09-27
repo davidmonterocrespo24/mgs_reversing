@@ -102,8 +102,8 @@ static inline void HZD_LevelPointHeight_helper(void)
     // the source and destination two arguments swaps the registers
     short *scratch2 = ( short * )SCRPAD_ADDR;
 
-    scratch2[3] = *(short *)0x1f800038;
-    scratch2[2] = -*(short *)0x1f80003a;
+    scratch2[3] = *(short *)(SCRPAD_ADDR + 0x038);
+    scratch2[2] = -*(short *)(SCRPAD_ADDR + 0x03a);
 }
 
 static inline void assign_subtract( int idx, short idx2, short idx3, short *val )
@@ -120,19 +120,52 @@ STATIC int SlopeFloorLevel(HZD_FLR *floor)
     assign_subtract( 27, 7, 1, ( short * )&floor->p1 );
 
     //todo: fix below, probably some inline
-    test = ( short * )0x1F800038;
+    test = ( short * )(SCRPAD_ADDR + 0x038);
     test[0] = floor->p1.h;
     do {} while(0);
     test[y = 1] = floor->p2.h;
 
     HZD_LevelPointHeight_helper();
 
-    gte_ldsxy3(0, *( int * )0x1F800034, *( int* )0x1F800004);
+    gte_ldsxy3(0, *( int * )(SCRPAD_ADDR + 0x034), *( int* )(SCRPAD_ADDR + 0x004));
     gte_nclip();
-    gte_stopz( 0x1F800008 );
+    gte_stopz( (SCRPAD_ADDR + 0x008) );
 
-    x = *(int * )0x1F800008;
+    x = *(int * )(SCRPAD_ADDR + 0x008);
+#ifdef __psyz
+    {
+        /* The floor height Snake stands on comes out of this one division, and
+         * it is coming out wrong: his slope probe 500 units ahead reports a
+         * 742-unit step on a flat dock, which then feeds SquareRoot0 a
+         * negative sum of squares. Everything here rides on scratchpad offsets
+         * and on HZD_FLR's layout, both of which this port has already had to
+         * correct elsewhere, so show the operands rather than guess which. */
+        static int budget = 12;
+        int div = floor->p3.h;
+        int res;
+
+        if (div == 0)
+        {
+            if (budget > 0)
+            {
+                budget--;
+                printf("[hzd] p3.h is 0 -- floor %p p1.y %d x %d\n",
+                       (void *)floor, floor->p1.y, x);
+            }
+            return floor->p1.y;
+        }
+        res = floor->p1.y - x / div;
+        if (budget > 0 && (res - floor->p1.y > 512 || res - floor->p1.y < -512))
+        {
+            budget--;
+            printf("[hzd] slope p1.y %d p2.h %d p3.h %d x %d -> %d\n",
+                   floor->p1.y, floor->p2.h, div, x, res);
+        }
+        return res;
+    }
+#else
     return floor->p1.y - x / floor->p3.h;
+#endif
 }
 
 STATIC void HZD_LevelTest(HZD_FLR *floor)

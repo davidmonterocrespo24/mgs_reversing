@@ -257,6 +257,17 @@ static int GetResources( Work *work, int name, int where )
     work->field_44 = THING_Gcl_GetInt('s');
     work->proc_id  = THING_Gcl_GetInt('e');
 
+#ifdef __psyz
+    /* Nothing downstream of here ever printed, so the question is whether the
+     * water area is created at all and what bounds the stage script gave it.
+     * All-zero bounds would mean GCL_GetOption('b') / GCL_StrToSV misparsed,
+     * which would be a port bug affecting every actor that reads 'b'. */
+    printf("[wt] area created: box %d,%d,%d..%d,%d,%d colour %d,%d,%d\n",
+           work->bound[0].vx, work->bound[0].vy, work->bound[0].vz,
+           work->bound[1].vx, work->bound[1].vy, work->bound[1].vz,
+           work->color.r, work->color.g, work->color.b);
+#endif
+
     NewWaterView2( name, where, work->bound, &work->color );
     return 0;
 }

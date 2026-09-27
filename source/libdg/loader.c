@@ -3,6 +3,9 @@
 #include <libgpu.h>
 
 #include "libdg.h"
+#ifdef __psyz
+#include "esp_attr.h"
+#endif
 #include "common.h"
 #include "libgv/libgv.h"
 #include "fmt_sgt.h"
@@ -70,9 +73,20 @@ static void LinkModelToParent(DG_MDL *mdl, DG_MDL *parent)
             }
 
             offset = fio2 - parent->vindices;
+#ifdef __psyz
+            /* byte offset of the parent's transformed vertex inside its pack
+             * array: 52/8 are the PACKED POLY_GT4's size and x0 position; the
+             * 8-byte-header layout is 56/12 (the 12-byte xy stride matches).
+             * Left packed, every skeleton-linked vertex read the wrong word
+             * of the parent's pack. */
+            uVar2 = (offset / 4) * 56;
+
+            vio2->pad = kVertexIndexingOrder[offset & 3] * 12 + uVar2 + 12;
+#else
             uVar2 = (offset / 4) * 52;
 
             vio2->pad = kVertexIndexingOrder[offset & 3] * 12 + uVar2 + 8;
+#endif
         }
 
         vio2++;
@@ -89,27 +103,27 @@ int DG_LoadInitKmd(void *buf, int id)
     {
         if (mdl->vertices)
         {
-            (char *)mdl->vertices += (unsigned int)def;
+            mdl->vertices = (__typeof__(mdl->vertices))((char *)mdl->vertices + ((unsigned int)def));
         }
         if (mdl->vindices)
         {
-            (char *)mdl->vindices += (unsigned int)def;
+            mdl->vindices = (__typeof__(mdl->vindices))((char *)mdl->vindices + ((unsigned int)def));
         }
         if (mdl->normals)
         {
-            (char *)mdl->normals += (unsigned int)def;
+            mdl->normals = (__typeof__(mdl->normals))((char *)mdl->normals + ((unsigned int)def));
         }
         if (mdl->nindices)
         {
-            (char *)mdl->nindices += (unsigned int)def;
+            mdl->nindices = (__typeof__(mdl->nindices))((char *)mdl->nindices + ((unsigned int)def));
         }
         if (mdl->texcoords)
         {
-            (char *)mdl->texcoords += (unsigned int)def;
+            mdl->texcoords = (__typeof__(mdl->texcoords))((char *)mdl->texcoords + ((unsigned int)def));
         }
         if (mdl->materials)
         {
-            (char *)mdl->materials += (unsigned int)def;
+            mdl->materials = (__typeof__(mdl->materials))((char *)mdl->materials + ((unsigned int)def));
         }
         if (mdl->parent >= 0)
         {
@@ -322,8 +336,32 @@ int DG_LoadInitPcx(void *buf, int id)
         width /= 2;
     }
 
+#ifdef __psyz
+    /* The decode scratch must NOT come from the GV packet arena: this loader
+     * runs again every frame for animated textures, and the arena's allocator
+     * handed back a region overlapping the LIVE model packs -- the decoded
+     * pixels sprayed over the characters' polygons (the corrupted-color
+     * triangles). A dedicated static buffer cannot collide with anything.
+     * 160 KB covers 512x256 plus headers; anything bigger falls back. */
+    {
+        static unsigned char EXT_RAM_BSS_ATTR pcx_scratch[0x28000];
+        if ((unsigned)(width * height + 528) <= sizeof(pcx_scratch))
+        {
+            images = (DG_Image *)pcx_scratch;
+        }
+        else
+        {
+            images = NULL;
+            printf("[pcx] %dx%d too big for the static scratch\n",
+                   width, height);
+        }
+    }
+    if (images)
+    {
+#else
     if (GV_AllocMemory2(GV_Clock, width * height + 528, (void **)&images))
     {
+#endif
         DG_Image      *imageA;
         DG_Image      *imageB;
         unsigned char *palette;
@@ -353,7 +391,13 @@ int DG_LoadInitPcx(void *buf, int id)
         DG_PcxReadPalette(palette, imageB->data, imageB->dim.w);
         LoadImage(&imageB->dim, (u_long *)imageB->data);
         LoadImage(&imageA->dim, (u_long *)imageA->data);
+#ifdef __psyz
+        /* the scratch is static: handing it to the GV allocator to free
+         * would corrupt the arena's bookkeeping */
+        images = NULL;
+#else
         GV_FreeMemory2(GV_Clock, (void **)&images);
+#endif
 
         if (id)
         {
@@ -384,26 +428,26 @@ int DG_LoadInitKmdar(void *buf, int id)
 
         while (--n_models >= 0)
         {
-            (char *)mdl->vertices += offset;
+            mdl->vertices = (__typeof__(mdl->vertices))((char *)mdl->vertices + (offset));
             if (mdl->vindices)
             {
-                (char *)mdl->vindices += offset;
+                mdl->vindices = (__typeof__(mdl->vindices))((char *)mdl->vindices + (offset));
             }
             if (mdl->normals)
             {
-                (char *)mdl->normals += offset;
+                mdl->normals = (__typeof__(mdl->normals))((char *)mdl->normals + (offset));
             }
             if (mdl->nindices)
             {
-                (char *)mdl->nindices += offset;
+                mdl->nindices = (__typeof__(mdl->nindices))((char *)mdl->nindices + (offset));
             }
             if (mdl->texcoords)
             {
-                (char *)mdl->texcoords += offset;
+                mdl->texcoords = (__typeof__(mdl->texcoords))((char *)mdl->texcoords + (offset));
             }
             if (mdl->materials)
             {
-                (char *)mdl->materials += offset;
+                mdl->materials = (__typeof__(mdl->materials))((char *)mdl->materials + (offset));
             }
             if (mdl->parent >= 0)
             {

@@ -49,7 +49,7 @@ DR_STP SECTION(".bss") d01a_dword_800D1468[2];
 
 static void BG_Clear(void)
 {
-    u_long *ot;
+    OT_TYPE *ot;
     TILE   *tile;
     DR_STP *stp;
     DR_STP *stp2;
@@ -241,7 +241,7 @@ static void InitPacks(POLY_FT4 *packs, Work *work, int arg3, int abr, int arg5, 
 
 static void Act(Work *work)
 {
-    u_long   *ot;
+    OT_TYPE   *ot;
     POLY_FT4 *prim;
     int       var_t0;
     int       var_t1;

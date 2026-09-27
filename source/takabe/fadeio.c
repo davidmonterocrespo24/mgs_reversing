@@ -42,7 +42,7 @@ unsigned short fadeio_mes_list[] = { HASH_KILL, 0x71F1 };
 static void Act(Work *work)
 {
     int     status;
-    u_long *ot;
+    OT_TYPE *ot;
     int     shade;
 
     if (GV_PauseLevel == 0)

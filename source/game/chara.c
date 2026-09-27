@@ -14,7 +14,7 @@ void *SECTION(".sbss") StageCharacterEntries;
 
 void GM_InitChara(void)
 {
-#ifdef DEV_EXE
+#if defined(DEV_EXE) || defined(__psyz)
     StageCharacterEntries = &_StageCharacterEntries[0];
 #else
     extern void *mts_get_bss_tail(void);
@@ -24,7 +24,7 @@ void GM_InitChara(void)
 
 void GM_ResetChara(void)
 {
-#ifndef DEV_EXE
+#if !defined(DEV_EXE) && !defined(__psyz)
     CHARA *chara;
 
     chara = (CHARA *)StageCharacterEntries;
@@ -64,5 +64,22 @@ void *GM_GetCharaID(int chara_id)
         }
     }
 
+#ifdef __psyz
+    {
+        /* A class the stage asks for that this build cannot supply. Every one
+         * of these is a thing that silently does not exist in the world -- the
+         * water surface at the dock is the visible example: Snake starts under
+         * it, so with the surface actor missing there is nothing above him but
+         * the background colour. Naming the id makes it findable in
+         * charalst.h, and whether it is missing from stage_union.c or simply
+         * not decompiled. */
+        static int budget = 24;
+        if (budget > 0)
+        {
+            budget--;
+            printf("[chara] class %04X NOT AVAILABLE\n", chara_id & 0xFFFF);
+        }
+    }
+#endif
     return NULL;
 }

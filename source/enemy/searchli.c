@@ -487,6 +487,7 @@ void Searchli_800D7D40(Work *work)
 
 // clang-format off
 // $13 replaced with $14 in gte_ld_intpol_sv0_xz
+#ifndef __psyz
 #define gte_ld_intpol_sv0_xz( r0 ) __asm__ volatile (           \
         "lh     $12, 0( %0 );"                                  \
         "lh     $14, 4( %0 );"                                  \
@@ -495,7 +496,10 @@ void Searchli_800D7D40(Work *work)
         :                                                       \
         : "r"( r0 )                                             \
         : "$12", "$14" )
+#endif /* __psyz: psyz provides a portable form */
 
+
+#ifndef __psyz
 #define gte_ld_intpol_sv1_xz( r0 ) __asm__ volatile (           \
         "lhu    $12, 0( %0 );"                                  \
         "lhu    $13, 4( %0 );"                                  \
@@ -504,7 +508,10 @@ void Searchli_800D7D40(Work *work)
         :                                                       \
         : "r"( r0 )                                             \
         : "$12", "$13" )
+#endif /* __psyz: psyz provides a portable form */
 
+
+#ifndef __psyz
 #define gte_stsv_xz( r0 ) __asm__ volatile (                    \
         "mfc2 $12, $9;"                                         \
         "mfc2 $14, $11;"                                        \
@@ -514,6 +521,8 @@ void Searchli_800D7D40(Work *work)
         :                                                       \
         : "r"( r0 )                                             \
         : "$12", "$13", "$14", "memory" )
+#endif /* __psyz: psyz provides a portable form */
+
 // clang-format on
 
 void Searchli_800D7DBC(SVECTOR *in, SVECTOR *out, int count)

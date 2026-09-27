@@ -13,7 +13,9 @@
 #define INIT_VEC(vec,xx,yy,zz) {(vec).vx = xx;(vec).vy = yy;(vec).vz = zz;}
 
 /*----------------------------------------------------------------*/
+#ifndef __psyz
 extern void fprintf( long stream, char *format, ... );
+#endif
 #define FPRI(a) fprintf(1,(a))
 
 #define PAPER_X 300

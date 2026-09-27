@@ -71,7 +71,7 @@ typedef struct _Work
 
 STATIC char byte_8009F5F8[] = {0, 0, 0, 0};
 
-static void addPrimEX(u_long *ot, void *prim)
+static void addPrimEX(OT_TYPE *ot, void *prim)
 {
     if (!(GM_PlayerStatus & PLAYER_NOT_SIGHT))
     {
@@ -265,7 +265,7 @@ static void sgtrect3_act_helper_8007020C(Work *work, DVECTOR *outScreenCoordsArr
     }
 }
 
-static void sgtrect3_act_helper_80070568(Work *work, u_long *ot, LINE_F3 *lineF3Arr)
+static void sgtrect3_act_helper_80070568(Work *work, OT_TYPE *ot, LINE_F3 *lineF3Arr)
 {
     int count;
     int index;
@@ -334,7 +334,7 @@ static void sgtrect3_act_helper_80070568(Work *work, u_long *ot, LINE_F3 *lineF3
     addPrimEX(ot, &work->field_23B8_prim[GV_Clock]);
 }
 
-static void sgtrect3_act_helper_80070820(u_long *ot, LINE_F3 *lineF3Arr, LINE_F2 *lineF2Arr, DVECTOR *screenCoords,
+static void sgtrect3_act_helper_80070820(OT_TYPE *ot, LINE_F3 *lineF3Arr, LINE_F2 *lineF2Arr, DVECTOR *screenCoords,
                                   u_short currentOffset, unsigned int rgb)
 {
     short sVar1;
@@ -416,7 +416,7 @@ static void sgtrect3_act_helper_80070AB0(Work *work, DVECTOR *screenCoordsArray,
     TARGET *currentTarget;
     unsigned short currentOffset;
 
-    u_long   *ot;
+    OT_TYPE   *ot;
     LINE_F3  *lineF3Arr;
     LINE_F2  *lineF2Arr;
     DR_TPAGE *tPageArr;

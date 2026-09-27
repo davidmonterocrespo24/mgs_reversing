@@ -93,7 +93,16 @@ static char *get_proc_block( int id )
 
 void GCL_ForceExecProc( int proc_id, GCL_ARGS *arg )
 {
+#ifdef __psyz
+    /* get_proc_block returns NULL when the id is unknown, and the console
+     * happily read the resulting address 3 (BIOS space) as script bytes.
+     * A host faults instead, so skip the call. */
+    char *blk = get_proc_block( proc_id );
+    if ( !blk ) { return; }
+    GCL_ExecBlock( blk + 3, arg );
+#else
     GCL_ExecBlock( get_proc_block( proc_id ) + 3, arg );
+#endif
 }
 
 int GCL_ExecProc( int proc_id, GCL_ARGS *arg )
@@ -104,7 +113,15 @@ int GCL_ExecProc( int proc_id, GCL_ARGS *arg )
         return 0;
     }
 
+#ifdef __psyz
+    {
+        char *blk = get_proc_block( proc_id );
+        if ( !blk ) { return 0; }
+        return GCL_ExecBlock( blk + 3, arg );
+    }
+#else
     return GCL_ExecBlock( get_proc_block( proc_id ) + 3, arg );
+#endif
 }
 
 static int GCL_Proc( char *p )

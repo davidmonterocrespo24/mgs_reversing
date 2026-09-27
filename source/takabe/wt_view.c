@@ -132,7 +132,7 @@ static inline int CheckInBounds(Work *work, short x, short y, short z)
 static void Act(Work *work)
 {
     SVECTOR  sp10;
-    u_long  *ot;
+    OT_TYPE  *ot;
     SVECTOR *vec;
     MATRIX  *eye;
     short    x, y, z;
@@ -147,6 +147,27 @@ static void Act(Work *work)
     vec->vx = x = eye->t[0];
     vec->vy = y = eye->t[1];
     vec->vz = z = eye->t[2];
+
+#ifdef __psyz
+    {
+        /* The greenish underwater view is gated on the CAMERA being inside the
+         * water box, not the player. If nothing is ever drawn there are only
+         * three possibilities and this print separates them: the eye really is
+         * outside a sensible box, the box itself came out as zeros (meaning
+         * the stage script's 'b' option was misparsed), or the actor is not
+         * running at all and this never prints. */
+        static int budget = 60;
+        if (budget > 0)
+        {
+            budget--;
+            printf("[wt] eye %d,%d,%d box %d,%d,%d..%d,%d,%d in=%d alloc=%d\n",
+                   x, y, z, work->bound[0].vx, work->bound[0].vy,
+                   work->bound[0].vz, work->bound[1].vx, work->bound[1].vy,
+                   work->bound[1].vz, CheckInBounds(work, x, y, z),
+                   work->has_alloc);
+        }
+    }
+#endif
 
     if (CheckInBounds(work, x, y, z) != work->has_alloc)
     {
@@ -345,7 +366,7 @@ static void WaterViewDraw(Work *work)
     short  *scratch3;
     short  *scratch4;
     short  *scratch5;
-    u_long *ot;
+    OT_TYPE *ot;
     int     i;
     SPRT   *sprt;
     int     nprims;
@@ -356,12 +377,12 @@ static void WaterViewDraw(Work *work)
     addPrim(ot, &work->prims->tile[GV_Clock * 2 + 0]);
     addPrim(ot, &work->prims->tile[GV_Clock * 2 + 1]);
 
-    scratch1 = (short *)0x1F800200;
-    scratch2 = (short *)0x1F800400;
+    scratch1 = (short *)(SCRPAD_ADDR + 0x200);
+    scratch2 = (short *)(SCRPAD_ADDR + 0x400);
 
     nprims = work->n_prims;
 
-    scratch3 = (short *)0x1F80000C;
+    scratch3 = (short *)(SCRPAD_ADDR + 0x00C);
 
     for (i = 6; i < 218; i += 2)
     {
@@ -387,7 +408,7 @@ static void WaterViewDraw(Work *work)
     scratch4 = scratch1 - 256;
     count2 = scratch4 - scratch3;
 
-    scratch1 = (short *)0x1F800200;
+    scratch1 = (short *)(SCRPAD_ADDR + 0x200);
 
     scratch5 = scratch2 - 512;
     count1 = scratch3 - scratch5;

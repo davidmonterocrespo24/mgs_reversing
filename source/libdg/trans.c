@@ -3,6 +3,10 @@
 #include "inline_n.h"
 #include "inline_x.h"
 #include "libgv/libgv.h" // for GV_Clock
+#ifdef __psyz
+unsigned mgs_dbg_objs_seen, mgs_dbg_objs_culled, mgs_dbg_models_culled,
+    mgs_dbg_models_drawn;
+#endif
 
 typedef struct _SCRATCH
 {
@@ -66,6 +70,12 @@ STATIC unsigned int DG_WriteObjVerticesIndirect( unsigned int vidx, POLY_GT4 *pa
             if (temp & 4)
             {
                 * (pack_ptr - 1 ) = (t3 + a2) - 4;
+#ifdef __psyz
+                {
+                    static int b = 0;
+                    if (b > 0) { b--; printf("[shade] embed %p\n", (void*)packs); }
+                }
+#endif
             }
 
             a2 = *(int *)(t3 + a2);
@@ -156,7 +166,7 @@ STATIC POLY_GT4 *DG_WriteObjVertices( unsigned int *vindices, POLY_GT4 *packs, i
 
         LCOPY(n3, &packs->x3);
 
-        gte_stopz((int *)0x1f8001f8);
+        gte_stopz((int *)(SCRPAD_ADDR + 0x1f8));
         gte_stsxy3_gt3(&packs->tag);
 
         area = *(int *)(scrpad_addr + 0x1f8);
@@ -395,12 +405,23 @@ void DG_TransChanl( DG_CHANL *chanl, int idx )
     DG_Clip(&chanl->clip_rect, chanl->clip_distance);
 
     queue = (DG_OBJS **)chanl->queue;
+#ifdef __psyz
+    {
+        /* how many queued objects actually survive the bound tests? */
+        extern unsigned mgs_dbg_objs_seen, mgs_dbg_objs_culled,
+            mgs_dbg_models_culled, mgs_dbg_models_drawn;
+        mgs_dbg_objs_seen += chanl->objs_index;
+    }
+#endif
     for (n_objects = chanl->objs_index; n_objects > 0; n_objects--)
     {
         objs = *queue++;
 
         if (objs->bound_mode == 0)
         {
+#ifdef __psyz
+            { extern unsigned mgs_dbg_objs_culled; mgs_dbg_objs_culled++; }
+#endif
             continue;
         }
 
@@ -411,14 +432,32 @@ void DG_TransChanl( DG_CHANL *chanl, int idx )
         {
             if (obj->bound_mode == 0)
             {
+#ifdef __psyz
+                { extern unsigned mgs_dbg_models_culled;
+                  mgs_dbg_models_culled++; }
+#endif
                 continue;
             }
+#ifdef __psyz
+            { extern unsigned mgs_dbg_models_drawn; mgs_dbg_models_drawn++; }
+#endif
 
             model = obj->model;
             parent = &objs->objs[model->parent];
 
 
+#ifdef __psyz
+            /* The rest of the pipeline addresses packs by the pipeline's own
+             * buffer index; only this line used GV_Clock. They agree on the
+             * console because the flip and the render are locked in step, but
+             * here a skeleton child could read its parent's transformed
+             * vertices out of the OTHER buffer -- last frame's pose, or an
+             * arena already recycled -- which projects the child's bounding
+             * box somewhere wrong and the visibility test drops the limb. */
+            work->parent_packs = parent->packs[idx];
+#else
             work->parent_packs = parent->packs[GV_Clock];
+#endif
             work->vertices = model->vertices;
 
             gte_SetRotMatrix(&obj->screen);

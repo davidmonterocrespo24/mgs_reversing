@@ -16,6 +16,40 @@ typedef struct _DG_PRIM_INFO {
 } DG_PRIM_INFO;
 
 // psize, verts, voffset, vstep
+#ifdef __psyz
+/* These byte layouts describe the PACKED prims of the console: 4-byte tag,
+ * first vertex at +8. PSY-Z's prims carry an 8-byte tag+len header, so every
+ * prim is 4 bytes bigger and every vertex sits 4 bytes later. Left as the
+ * console values, each transformed vertex landed on the prim's COMMAND word
+ * and the whole 3D world reached the GPU as code-0 garbage. The inter-vertex
+ * stride does not change. */
+STATIC DG_PRIM_INFO DG_PrimInfos[DG_PRIM_MAX] = {
+    { 20, 2, 12,  4 }, // DG_PRIM_LINE_F2
+    { 28, 3, 12,  4 }, // DG_PRIM_LINE_F3
+    { 32, 4, 12,  4 }, // DG_PRIM_LINE_F4
+    { 24, 2, 12,  8 }, // DG_PRIM_LINE_G2
+    { 36, 3, 12,  8 }, // DG_PRIM_LINE_G3
+    { 44, 4, 12,  8 }, // DG_PRIM_LINE_G4
+    { 24, 1, 12,  0 }, // DG_PRIM_SPRT
+    { 20, 1, 12,  0 }, // DG_PRIM_SPRT_8
+    { 20, 1, 12,  0 }, // DG_PRIM_SPRT_16
+    { 20, 1, 12,  0 }, // DG_PRIM_TILE
+    { 16, 1, 12,  0 }, // DG_PRIM_TILE_1
+    { 16, 1, 12,  0 }, // DG_PRIM_TILE_8
+    { 16, 1, 12,  0 }, // DG_PRIM_TILE_16
+    { 24, 3, 12,  4 }, // DG_PRIM_POLY_F3
+    { 28, 4, 12,  4 }, // DG_PRIM_POLY_F4
+    { 32, 3, 12,  8 }, // DG_PRIM_POLY_G3
+    { 40, 4, 12,  8 }, // DG_PRIM_POLY_G4
+    { 36, 3, 12,  8 }, // DG_PRIM_POLY_FT3
+    { 44, 4, 12,  8 }, // DG_PRIM_POLY_FT4
+    { 44, 3, 12, 12 }, // DG_PRIM_POLY_GT3
+    { 56, 4, 12, 12 }, // DG_PRIM_POLY_GT4
+    { 44, 2, 12,  8 }, // DG_PRIM_LINE_FT2
+    { 56, 2, 12, 12 }, // DG_PRIM_LINE_GT2
+    { 16, 1, 12,  0 }  // DG_PRIM_FREE
+};
+#else
 STATIC DG_PRIM_INFO DG_PrimInfos[DG_PRIM_MAX] = {
     { 16, 2, 8,  4 }, // DG_PRIM_LINE_F2
     { 24, 3, 8,  4 }, // DG_PRIM_LINE_F3
@@ -42,6 +76,7 @@ STATIC DG_PRIM_INFO DG_PrimInfos[DG_PRIM_MAX] = {
     { 52, 2, 8, 12 }, // DG_PRIM_LINE_GT2
     { 12, 1, 8,  0 }  // DG_PRIM_FREE
 };
+#endif
 
 MATRIX DG_ZeroMatrix = {
     {{0x1000, 0x0000, 0x0000},
@@ -345,8 +380,18 @@ STATIC char *_MakeXYZRectangleSingle( DG_PRIM *prim, char *out, int n_prims )
     for ( n_prims--; n_prims >= 0; n_prims-- )
     {
         SCOPYL(&in->vz, out);
+#ifdef __psyz
+        /* The only hard-coded prim offsets left in this file. +8/+10 are x0/y0
+         * on the console; with PSY-Z's 8-byte tag+len header they land on
+         * r0/g0/b0 AND the command byte, so every TILE/SPRT rectangle reached
+         * the GPU with its opcode replaced by the low byte of a screen
+         * coordinate. The table already carries the right value (12 here). */
+        SSTOREL(in->vx - x, out + prim->voffset);
+        SSTOREL(in->vy - y, out + prim->voffset + 2);
+#else
         SSTOREL(in->vx - x, out + 8);
         SSTOREL(in->vy - y, out + 10);
+#endif
 
         in++;
         out += psize;
@@ -640,6 +685,43 @@ DG_PRIM *DG_MakePrim( int type, int prim_count, int chanl, SVECTOR *pos, RECT *r
     // Point to data after the end of the structure
     prim->packs[0] = &prim[1];
     prim->packs[1] = (char *)&prim[1] + pack_size;
+
+#ifdef __psyz
+    /* Give every pack its length. GV_ZeroMemory above only clears the DG_PRIM
+     * header, so the pack area arrives holding whatever the heap block held
+     * before, and each caller is trusted to write the length itself. Most do.
+     * The one drawing the dock's searchlights does not, and its packs reached
+     * the queue with a stale word where the length belongs -- the same value in
+     * every consecutive pack, which is what a leftover colour array looks like.
+     * The reader then dropped each packet and resumed mid-primitive.
+     *
+     * On the console this could not happen: the length shared a word with the
+     * next-pointer, and addPrim() rewrote that word on every insertion, so a
+     * forgotten setlen() was invisible. PSY-Z splits them, and addPrim() no
+     * longer touches the length -- so "forgotten" now means "never written".
+     * That is why this is a port bug and not a game bug.
+     *
+     * len counts the words after the tag: psize covers the 12-byte header plus
+     * the payload, so psize/4 - 2. Verified against PSY-Z's own macros --
+     * FT4 44 -> 9, GT4 56 -> 12, TILE 20 -> 3. Callers that do set their own
+     * length just write the same value again. */
+    {
+        int len = info->psize / 4 - 2;
+        int i, n;
+
+        if (len > 0)
+        {
+            for (i = 0; i < 2; i++)
+            {
+                char *p = prim->packs[i];
+                for (n = prim_count; n > 0; n--, p += info->psize)
+                {
+                    setlen(p, len);
+                }
+            }
+        }
+    }
+#endif
 
     return prim;
 }

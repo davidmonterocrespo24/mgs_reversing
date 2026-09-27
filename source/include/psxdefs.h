@@ -10,12 +10,21 @@ typedef long (*openevent_cb_t)();
 
 // getScratchAddr() but cast as a pointer to the specified type.
 // Unlike the original, offset is NOT multiplied by the sizeof(type).
-#define getScratchAddr2(type, offset)   ((type *)(0x1f800000+(offset)))
+#define getScratchAddr2(type, offset)   ((type *)((SCRPAD_ADDR + 0x000)+(offset)))
 
 /*---------------------------------------------------------------------------*/
 // clang-format off
 
-#define SCRPAD_ADDR     0x1f800000
+#ifdef __psyz
+/* The PSX has 1 KiB of fast scratchpad at physical 0x1f800000. On any other
+ * target it is a plain array; every literal scratchpad address in the engine
+ * was rewritten to SCRPAD_ADDR + offset, so this one definition relocates all
+ * of them at once. */
+extern unsigned long psyz_scratchpad[256];
+#define SCRPAD_ADDR     ((unsigned long)psyz_scratchpad)
+#else
+#define SCRPAD_ADDR     0x1F800000u
+#endif
 #define SCRPAD_SIZE     0x400
 
 // These macros were taken from "GTE Advanced Topics" (slide 18),
@@ -29,9 +38,15 @@ typedef long (*openevent_cb_t)();
 // for passing the 5th argument onwards. The callee will receive garbage data
 // if these are set before the stack switch.
 
-/* scratch pad address 0x1f800000 - 0x1f800400 */
-#define SPAD_STACK_ADDR 0x1f8003fc
+/* scratch pad address (SCRPAD_ADDR + 0x000) - (SCRPAD_ADDR + 0x400) */
+#define SPAD_STACK_ADDR (SCRPAD_ADDR + 0x3fc)
 
+#ifdef __psyz
+/* Parking the stack in the PSX scratchpad is a cache trick with no equivalent
+ * anywhere else; the code below only needs it to be a no-op. */
+#define SetSpadStack(addr) ((void)(addr))
+#define ResetSpadStack()   ((void)0)
+#else
 #define SetSpadStack(addr) { \
     __asm__ volatile ("move $8,%0"     ::"r"(addr):"$8","memory"); \
     __asm__ volatile ("sw $29,0($8)"   ::         :"$8","memory"); \
@@ -43,6 +58,7 @@ typedef long (*openevent_cb_t)();
     __asm__ volatile ("addiu $29,$29,4":::"$29","memory"); \
     __asm__ volatile ("lw $29,0($29)"  :::"$29","memory"); \
 }
+#endif /* __psyz */
 
 #define GetStackAddr(addr) { \
     __asm__ volatile ("move $8,%0"     ::"r"(addr):"$8","memory"); \

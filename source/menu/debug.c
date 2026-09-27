@@ -17,7 +17,7 @@ unsigned char SECTION(".sbss") dword_800ABB21;
 short         SECTION(".sbss") word_800ABB22;
 DG_TEX       *SECTION(".sbss") dword_800ABB24;
 
-STATIC int menu_draw_mem_debug(MenuWork *work, u_long *ot)
+STATIC int menu_draw_mem_debug(MenuWork *work, OT_TYPE *ot)
 {
     GV_HEAP             *pHeap;
     LINE_F2             *pLine;
@@ -130,7 +130,7 @@ STATIC short word_800AB66C = 0;
 STATIC short word_800AB66E = 0;
 STATIC int   dword_800AB670 = 0;
 
-STATIC int menu_draw_pow_debug(MenuWork *work, u_long *ot)
+STATIC int menu_draw_pow_debug(MenuWork *work, OT_TYPE *ot)
 {
     int             prims_used, left, right, bottom, idx, i;
     unsigned short *pCount;
@@ -268,11 +268,11 @@ STATIC int menu_draw_pow_debug(MenuWork *work, u_long *ot)
     return prims_used;
 }
 
-STATIC int menu_draw_ply_debug(MenuWork *work, u_long *ot)
+STATIC int menu_draw_ply_debug(MenuWork *work, OT_TYPE *ot)
 {
-    u_long       *chnlOt;
+    OT_TYPE       *chnlOt;
     int           numOTEntries;
-    u_long       *otMin;
+    OT_TYPE       *otMin;
     u_long       *curPrim;
     int           primCount;
     int           totalprimCount;
@@ -358,7 +358,7 @@ STATIC int menu_draw_ply_debug(MenuWork *work, u_long *ot)
     return returnVal;
 }
 
-STATIC int menu_draw_obj_debug(MenuWork *work, u_long *ot)
+STATIC int menu_draw_obj_debug(MenuWork *work, OT_TYPE *ot)
 {
     DG_OBJS **ppQueue;
     DG_OBJS  *pObjs;
@@ -475,7 +475,7 @@ STATIC int menu_draw_obj_debug(MenuWork *work, u_long *ot)
     return returnVal;
 }
 
-STATIC int menu_draw_tex_debug(MenuWork *work, u_long *ot)
+STATIC int menu_draw_tex_debug(MenuWork *work, OT_TYPE *ot)
 {
     const int textureRecsCount = DG_MAX_TEXTURES;
     short     x0, y0;
@@ -598,7 +598,7 @@ char *menu_debug_screen_labels_8009E744[] = {
     "tex",
 };
 
-void menu_viewer_act(MenuWork *work, u_long *ot)
+void menu_viewer_act(MenuWork *work, OT_TYPE *ot)
 {
     mts_read_pad(2);
     if (GM_GameStatus & STATE_DEMO_VERBOSE)
