@@ -1,3 +1,52 @@
+# Metal Gear Solid on the ESP32-S3
+
+This fork runs **Metal Gear Solid natively on an ESP32-S3 microcontroller**,
+including a DIY handheld built around a Seeed XIAO ESP32S3 Sense. The game's
+decompiled C is compiled straight to Xtensa machine code; the PlayStation SDK,
+GPU and GTE are replaced by software.
+
+<p align="center">
+  <a href="https://youtube.com/shorts/XTUJKQWMhi0">
+    <img src="docs/esp32/gameplay.gif" alt="Metal Gear Solid gameplay on the XIAO ESP32S3 handheld" width="360">
+  </a>
+  <br>
+  <sub>Gameplay on the handheld. <a href="https://youtube.com/shorts/XTUJKQWMhi0">Watch the full video on YouTube</a>.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/esp32/handheld-dock.webp" alt="The handheld running Metal Gear Solid at the dock" width="32%">
+  <img src="docs/esp32/in-game.webp" alt="In game on the handheld, with the radar in the top-right corner" width="32%">
+  <img src="docs/esp32/handheld-front.webp" alt="The assembled handheld: analog stick, button ladder and the XIAO" width="32%">
+</p>
+
+### Tested with Velxio, without flashing the board every time
+
+<a href="https://velxio.dev/"><img src="docs/esp32/velxio-logo.svg" alt="Velxio" width="56" align="left"></a>
+
+During development I used **[velxio-cli](https://velxio.dev/docs/ci/)** to run
+the compiled firmware on the [Velxio](https://velxio.dev/) simulator straight
+from the terminal, instead of flashing the ESP32-S3 after every change. The CLI
+boots the real firmware image, streams the serial output back and exits with an
+error when the expected output does not appear, so a change can be checked in
+seconds. [Open the Velxio editor](https://velxio.dev/).
+
+<br clear="left">
+
+### Where to go next
+
+- **Port overview, status and build steps:** [`esp32/README.md`](esp32/README.md)
+- **Build the handheld** (wiring diagram, parts, button map): [`esp32/hardware/HARDWARE.md`](esp32/hardware/HARDWARE.md)
+- **Every bug and its root cause:** [`port/STATUS.md`](port/STATUS.md)
+- **Write-up:** [Metal Gear Solid running natively on the ESP32-S3](https://velxio.dev/blog/posts/metal-gear-solid-on-esp32-s3/)
+
+Not working yet: codec calls, the opening, the elevator and CD streaming; the
+dock runs at about 15 fps. You need your own copy of the game: no game data is
+included in this repository.
+
+---
+
+*The original mgs_reversing README follows.*
+
 # mgs_reversing
 
 This project aims to completely reverse engineer *Metal Gear Solid Integral* for PlayStation back to C source code which when compiled produces the same assembly code.

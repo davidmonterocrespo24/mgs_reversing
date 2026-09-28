@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0d0d0f"/>
+  <!-- IC body (filled, high contrast) -->
+  <rect x="8" y="8" width="16" height="16" rx="2" fill="#007acc"/>
+  <!-- Die (darker inset) -->
+  <rect x="11" y="11" width="10" height="10" rx="1" fill="#005fa3"/>
+  <!-- Top pins -->
+  <rect x="12" y="3" width="3" height="5" rx="1" fill="#007acc"/>
+  <rect x="17" y="3" width="3" height="5" rx="1" fill="#007acc"/>
+  <!-- Bottom pins -->
+  <rect x="12" y="24" width="3" height="5" rx="1" fill="#007acc"/>
+  <rect x="17" y="24" width="3" height="5" rx="1" fill="#007acc"/>
+  <!-- Left pins -->
+  <rect x="3" y="12" width="5" height="3" rx="1" fill="#007acc"/>
+  <rect x="3" y="17" width="5" height="3" rx="1" fill="#007acc"/>
+  <!-- Right pins -->
+  <rect x="24" y="12" width="5" height="3" rx="1" fill="#007acc"/>
+  <rect x="24" y="17" width="5" height="3" rx="1" fill="#007acc"/>
+</svg>

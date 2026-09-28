@@ -1,5 +1,9 @@
 # Metal Gear Solid on the ESP32-S3
 
+<a href="https://youtube.com/shorts/XTUJKQWMhi0"><img src="../docs/esp32/gameplay.gif" alt="Gameplay on the XIAO ESP32S3 handheld" width="320"></a>
+
+Gameplay on the handheld: [watch it on YouTube](https://youtube.com/shorts/XTUJKQWMhi0).
+
 A native port — not an emulator — of the Metal Gear Solid decompilation to an
 ESP32-S3 microcontroller: 240 MHz dual-core Xtensa, 512 KB of internal SRAM,
 8 MB of PSRAM. The whole engine is compiled to Xtensa machine code; the
