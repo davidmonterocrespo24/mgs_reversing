@@ -19,6 +19,14 @@ GPU and GTE are replaced by software.
   <img src="docs/esp32/handheld-front.webp" alt="The assembled handheld: analog stick, button ladder and the XIAO" width="32%">
 </p>
 
+### The circuit
+
+<p align="center">
+  <a href="esp32/hardware/HARDWARE.md"><img src="esp32/hardware/wiring.svg" alt="Wiring of the handheld, drawn with Velxio's part art: XIAO ESP32S3 Sense, ILI9341 panel, analog stick, six-button resistor ladder and two direct buttons"></a>
+</p>
+
+All eleven XIAO pins are used. Parts list, pin table, button map and the mistakes made during the build are in the [hardware guide](esp32/hardware/HARDWARE.md).
+
 ### Tested with Velxio, without flashing the board every time
 
 <a href="https://velxio.dev/"><img src="docs/esp32/velxio-logo.svg" alt="Velxio" width="56" align="left"></a>
