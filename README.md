@@ -46,6 +46,7 @@ seconds. [Open the Velxio editor](https://velxio.dev/).
 - **Build the handheld** (wiring diagram, parts, button map): [`esp32/hardware/HARDWARE.md`](esp32/hardware/HARDWARE.md)
 - **Every bug and its root cause:** [`port/STATUS.md`](port/STATUS.md)
 - **Write-up:** [Metal Gear Solid running natively on the ESP32-S3](https://velxio.dev/blog/posts/metal-gear-solid-on-esp32-s3/)
+- **Questions, ideas or your own build:** join the [Velxio Discord](https://discord.com/invite/3mARjJrh4E)
 
 Not working yet: codec calls, the opening, the elevator and CD streaming; the
 dock runs at about 15 fps. You need your own copy of the game: no game data is
@@ -2184,4 +2185,4 @@ When you create a new decomp.me scratch you'll be asked for a context - you can 
 
 ## Help, I am totally stuck?
 
-Join [our Discord](https://discord.gg/tTvhQ8w) and ask for help in `#metal_gear_dev`.
+Join the [Velxio Discord](https://discord.com/invite/3mARjJrh4E) and ask for help.
